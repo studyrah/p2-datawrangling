@@ -41,6 +41,7 @@ import codecs
 import csv
 import json
 import pprint
+import re
 
 DATAFILE = 'arachnid.csv'
 FIELDS ={'rdf-schema#label': 'label',
@@ -50,20 +51,41 @@ FIELDS ={'rdf-schema#label': 'label',
 def add_field(filename, fields):
 
     process_fields = fields.keys()
+        
+    print(process_fields)
     data = {}
     with open(filename, "r") as f:
         reader = csv.DictReader(f)
         for i in range(3):
             l = reader.next()
         # YOUR CODE HERE
-
+            
+        #(rahaugh) not sure why we are given 'fields' and then add the
+        #keys to process_fields.  This implies we can loop through these
+        #and process the data.  BUT we have distinct processing for
+        #label and binomialAuthority respectively and as fields is a dict
+        #we can't rely upon the ordering of fields.keys()?????
+        
+        for l in reader:            
+            label = l['rdf-schema#label']
+            bina = l['binomialAuthority_label']
+            
+            if bina != 'NULL':
+                label = re.sub(" *\(.*\)","",label).strip()
+            
+            data[label] = bina
+            
     return data
 
 
 def update_db(data, db):
-    # YOUR CODE HERE
-    pass
 
+    for label in data:
+        record = db.arachnid.find_one({'label': label})
+        if (record != None):
+            record['classification']['binomialAuthority'] = data[label]
+
+            db.arachnid.save(record)
 
 def test():
     # Please change only the add_field and update_db functions!

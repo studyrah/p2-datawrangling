@@ -18,7 +18,7 @@ def get_db():
 
 def in_query():
     # Write the query
-    query = {}
+    query = {"manufacturer_label" : "Ford Motor Company", "assembly_label" : {"$in" : ["Germany", "United Kingdom", "Japan"]}}
     
     return query
 

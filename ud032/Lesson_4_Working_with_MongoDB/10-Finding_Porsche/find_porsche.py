@@ -16,13 +16,31 @@ https://www.udacity.com/wiki/ud032
 def get_db(db_name):
     from pymongo import MongoClient
     client = MongoClient('localhost:27017')
+    #print client.database_names()
     db = client[db_name]
     return db
 
+"""
+(rahaugh)
+I had to manually get the autos db (there was a link on Udacity):
 
+~/nanodegree/.........../Lesson_4_Work..../10-Finding-Porsche/autos.csv
+
+Import into Mongodb:
+
+mongoimport --db examples --collection autos --type csv --headerline --file ./autos.csv
+
+Once done I tried to query:
+
+{'manufacturer' : 'Porsche'}
+
+Got nothing so successfully tried:
+
+{'manufacturer_label' : 'Porsche'}
+"""
 def porsche_query():
     # Please fill in the query to find all autos manuafactured by Porsche
-    query = {}
+    query = {"manufacturer_label" : "Porsche"}
     return query
 
 
@@ -36,3 +54,17 @@ if __name__ == "__main__":
     query = porsche_query()
     p = find_porsche(db, query)
     import pprint
+    
+    print "hello"
+    for ans in p:
+        pprint.pprint(ans)
+        
+    #pprint.pprint(db.autos.find_one())
+    
+    #print db.collection_names()
+    
+    #c = db.autos.find()
+    #for ans in c:
+    #    pprint.pprint(ans)
+    
+    

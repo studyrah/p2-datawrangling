@@ -59,11 +59,78 @@ def process_file(filename, fields):
     with open(filename, "r") as f:
         reader = csv.DictReader(f)
         for i in range(3):
-            l = reader.next()
+            l = reader.next()            
 
         for line in reader:
             # YOUR CODE HERE
-            pass
+            
+            #- keys of the dictionary changed according to the mapping in FIELDS dictionary
+            for orig_lab,new_lab in FIELDS.iteritems():            
+                line[new_lab] = line.pop(orig_lab)
+       
+            #- trim out redundant description in parenthesis from the 'rdf-schema#label' field, like "(spider)"
+            #(rahaugh) recall we have renamed this field to label            
+            line['label'] = re.sub(" *\(.*\)","",line['label']).strip() 
+            
+            #- if 'name' is "NULL" or contains non-alphanumeric characters, set it to the same value as 'label'.
+            if re.match('NULL|.*[^\w ].*', line['name']):                
+                line['name'] = line['label']
+                                
+            #- if a value of a field is "NULL", convert it to None
+            #- strip leading and ending whitespace from all fields, if there is any                                
+            #(rahaugh) I ought to re-structure to only touch each field once
+            for k,v in line.iteritems():
+                v = v.strip(" \t\r\n")
+                
+                if v == "NULL":
+                    v = None
+                
+                line[k] = v
+            
+            #- if there is a value in 'synonym', it should be converted to an array (list)
+            #by stripping the "{}" characters and splitting the string on "|". Rest of the cleanup is up to you,
+            #eg removing "*" prefixes etc
+            if line['synonym'] != None:
+                origsyns = line['synonym'].strip('{}').split('|')
+                
+                newsyns = []
+                for syn in origsyns:
+                    newsyns.append(syn.strip("* "))
+                    
+                line['synonym'] = newsyns
+                
+            
+            #- the output structure should be as follows:
+            #{ 'label': 'Argiope',
+            #'uri': 'http://dbpedia.org/resource/Argiope_(spider)',
+            #'description': 'The genus Argiope includes rather large and spectacular spiders that often ...',
+            #'name': 'Argiope',
+            #'synonym': ["One", "Two"],
+            #'classification': {
+            #        'family': 'Orb-weaver spider',
+            #        'class': 'Arachnid',
+            #        'phylum': 'Arthropod',
+            #        'order': 'Spider',
+            #        'kingdom': 'Animal',
+            #        'genus': None
+            #        }
+            outline = {}
+            classification = {}
+            outline['classification'] = classification
+            outline['uri'] = line['uri']
+            outline['description'] = line['description']
+            outline['name'] = line['name']
+            outline['synonym'] = line['synonym']  
+            outline['label'] = line['label']                     
+            classification['family'] = line['family']
+            classification['class'] = line['class']
+            classification['phylum'] = line['phylum']
+            classification['order'] = line['order']
+            classification['kingdom'] = line['kingdom']
+            classification['genus'] = line['genus']
+            
+            data.append(outline)            
+                                
     return data
 
 

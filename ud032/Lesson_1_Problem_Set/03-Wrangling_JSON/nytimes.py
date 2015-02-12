@@ -24,8 +24,8 @@ import requests
 
 URL_MAIN = "http://api.nytimes.com/svc/"
 URL_POPULAR = URL_MAIN + "mostpopular/v2/"
-API_KEY = { "popular": "",
-            "article": ""}
+API_KEY = { "popular": "26d2c766f29a5ff9e001f5174c09b2e8:4:70993461",
+            "article": "ac3adc80ae2f402cdcbaa723891879ad:16:70993461"}
 
 
 def get_from_file(kind, period):
@@ -38,8 +38,16 @@ def article_overview(kind, period):
     data = get_from_file(kind, period)
     titles = []
     urls =[]
-    # YOUR CODE HERE
 
+    # YOUR CODE HERE
+    for article in data:        
+        titles.append({article["section"] : article["title"]})
+        
+        for mm in article["media"]:
+            for item in mm["media-metadata"]:
+                if item["format"] == "Standard Thumbnail":
+                    urls.append(item["url"])
+    
     return (titles, urls)
 
 
@@ -101,3 +109,4 @@ def test():
 
 if __name__ == "__main__":
     test()
+    #save_file("viewed",1)

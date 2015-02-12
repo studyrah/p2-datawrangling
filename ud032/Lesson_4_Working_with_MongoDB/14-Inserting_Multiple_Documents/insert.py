@@ -7,6 +7,9 @@ def insert_autos(infile, db):
     # Your code here. Insert the data in one command
     # autos will be a list of dictionaries, as in the example in the previous video
     # You have to insert data in a collection 'autos'
+    for auto in autos:
+        db.autos.insert(auto)
+    
 
 
   
@@ -16,5 +19,9 @@ if __name__ == "__main__":
     client = MongoClient("mongodb://localhost:27017")
     db = client.examples
 
+    print db.autos.find().count()
+
     insert_autos('autos-small.csv', db)
     print db.autos.find_one()
+    
+    print db.autos.find().count()

@@ -18,12 +18,42 @@ import pprint
 
 CITIES = 'cities.csv'
 
+def getType(value):
+    if value == "NULL" or value == "":                
+        return type(None)
+    
+    if value.startswith("{"):
+        return type([])
+        
+    try:
+        i = int(value)
+        return type(i)
+        
+    except:
+        pass
+    
+    try:    
+        f = float(value)
+        return type(f)
+    except:    
+        return type(value)
+
+
 
 def fix_name(name):
-
+    names = []
     # YOUR CODE HERE
+    ftype = getType(name)
+    
+    if ftype == type("str"):        
+        names = [name]
+        
+    elif ftype == type([]):
+        name = name.strip("{").strip("}")        
+        names = name.split("|")
 
-    return name
+    return names
+
 
 
 def process_file(filename):
@@ -49,6 +79,8 @@ def test():
     for n in range(20):
         pprint.pprint(data[n]["name"])
 
+    print "grrr"
+    print data[14]["name"]
     assert data[14]["name"] == ['Negtemiut', 'Nightmute']
     assert data[3]["name"] == ['Kumhari']
 

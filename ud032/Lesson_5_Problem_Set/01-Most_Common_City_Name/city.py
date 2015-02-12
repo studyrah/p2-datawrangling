@@ -23,9 +23,9 @@ If you want to run this code locally on your machine, you have to install MongoD
 download and insert the dataset.
 For instructions related to MongoDB setup and datasets please see Course Materials.
 
-Please note that the dataset you are using here is a smaller version of the twitter dataset used in 
+Please note that the dataset you are using here is a smaller version of the cities collection used in 
 examples in this lesson. If you attempt some of the same queries that we looked at in the lesson 
-examples, your results will be different.
+examples, your results may be different.
 """
 
 def get_db(db_name):
@@ -36,7 +36,25 @@ def get_db(db_name):
 
 def make_pipeline():
     # complete the aggregation pipeline
-    pipeline = [ ]
+    pipeline = [
+    {
+        "$match" : {"name":{"$exists":1}}
+    },
+    {
+        "$group" : {
+            "_id" : "$name",
+            "count" : {"$sum" : 1}
+        }
+    },    
+    {
+        "$sort" : {
+            "count" : -1
+        }
+    },
+    {
+        "$limit" : 1
+    }    
+    ]
     return pipeline
 
 def aggregate(db, pipeline):

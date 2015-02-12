@@ -25,8 +25,15 @@ CITIES = 'cities.csv'
 
 def check_loc(point, lat, longi):
     # YOUR CODE HERE
+    plat, plong = point.split(" ")
     
-    pass
+    #I assumed that if the values were the same rounded to some reasonable
+    #num d.p.'s that we would say true, hence:
+    #return  round(float(lat),4) == (round(float(plat),4)) and \
+    #        round(float(longi),4) == (round(float(plong),4))
+    
+    #but they just want an exact string match I think
+    return lat == plat and longi == plong
 
 
 def process_file(filename):

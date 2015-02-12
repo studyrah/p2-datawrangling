@@ -19,16 +19,36 @@ def get_db():
 
 def range_query():
     # You can use datetime(year, month, day) to specify date in the query
-    query = {}
+    
+    #(rahaugh) returns plenty    
+    #query = {"foundingDate" : {"$ne" : 'NULL'}}
+    
+    #(rahaugh)
+    # works on Udacity but, probably due to the way I imported the data
+    # this returns nothing    
+    #query = {"foundingDate" : {"$gte" : datetime(2000,1,1)}}
+    
+    # this sort of works but actually gives entirely the wrong answers
+    query = {"foundingDate" : {"$gte" : "2000-01-01", \
+                               "$ne" : 'NULL'}}    
+    
     return query
+    
 
 
 if __name__ == "__main__":
 
     db = get_db()
     query = range_query()
+
+    print db.cities.find().count()
+
     cities = db.cities.find(query)
 
     print "Found cities:", cities.count()
     import pprint
-    pprint.pprint(cities[0])
+    pprint.pprint(cities[12])
+    #cits = db.cities.find()
+    
+    #for cit in cits:
+    #    pprint.pprint(cit)

@@ -3,8 +3,14 @@ import json
 def insert_data(data, db):
 
     # Your code here. Insert the data into a collection 'arachnid'
-
-    pass
+    if 'arachnid' not in db.collection_names():
+        db.create_collection("arachnid")
+    
+    db.arachnid.insert(data)
+    
+    
+    #for rec in data:
+    #    db.arachnid.insert(rec)
 
 
 if __name__ == "__main__":

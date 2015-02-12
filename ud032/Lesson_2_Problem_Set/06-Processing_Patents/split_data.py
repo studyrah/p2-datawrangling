@@ -9,6 +9,8 @@
 import xml.etree.ElementTree as ET
 PATENTS = 'patent.data'
 
+ROOTLINE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+
 def get_root(fname):
     tree = ET.parse(fname)
     return tree.getroot()
@@ -21,7 +23,25 @@ def split_file(filename):
     # The new files should be saved with filename in the following format:
     # "{}-{}".format(filename, n) where n is a counter, starting from 0.
 
-    pass
+    n = 0
+
+    with open(filename, "r") as patents:
+
+        outfile = open("{}-{}".format(filename, n), "w")        
+
+        #not that robust cos assumes first line is ROOTLINE        
+        outfile.write(patents.readline())
+
+        for line in patents:
+                       
+            if line.strip() == ROOTLINE:
+                
+                outfile.close
+
+                n += 1                    
+                outfile = open("{}-{}".format(filename, n), "w")            
+
+            outfile.write(line)
 
 
 def test():

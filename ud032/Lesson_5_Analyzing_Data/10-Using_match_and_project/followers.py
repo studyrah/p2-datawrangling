@@ -38,7 +38,28 @@ def get_db(db_name):
 
 def make_pipeline():
     # complete the aggregation pipeline
-    pipeline = [ ]
+
+    pipeline = [
+        {
+            "$match" : {"country" : "India"}
+        },
+        {
+            "$unwind" : "$isPartOf"
+        },
+        {
+            "$group" : {
+                "_id" : "$isPartOf",
+                "city_avg" : {"$avg" : "$population"}
+            }
+        },
+        {
+            "$group" : {
+                "_id" : "India Regional City Population Average",
+                "avg" : {"$avg" : "$city_avg"}
+            }
+        }
+    ]
+
     return pipeline
 
 def aggregate(db, pipeline):
@@ -47,9 +68,19 @@ def aggregate(db, pipeline):
 
 if __name__ == '__main__':
     db = get_db('twitter')
+    
     pipeline = make_pipeline()
     result = aggregate(db, pipeline)
+    print(len(result["result"])) 
+
+    print(result["result"][0]["followers"])
+
+    
     assert len(result["result"]) == 1
-    assert result["result"][0]["followers"] == 17209
+    assert result["result"][0]["followers"] == 259760
+
     import pprint
+    
+    #pprint.pprint(db.tweets.find_one({"user.time_zone" : "Brasilia"}))
+    
     pprint.pprint(result)

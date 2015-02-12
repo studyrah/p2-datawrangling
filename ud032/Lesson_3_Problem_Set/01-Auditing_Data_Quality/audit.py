@@ -25,12 +25,48 @@ FIELDS = ["name", "timeZone_label", "utcOffset", "homepage", "governmentType_lab
           "elevation", "maximumElevation", "minimumElevation", "populationDensity", "wgs84_pos#lat", "wgs84_pos#long", 
           "areaLand", "areaMetro", "areaUrban"]
 
+def getType(value):
+    if value == "NULL" or value == "":                
+        return type(None)
+    
+    if value.startswith("{"):
+        return type([])
+        
+    try:
+        i = int(value)
+        return type(i)
+        
+    except:
+        pass
+    
+    try:    
+        f = float(value)
+        return type(f)
+    except:    
+        return type(value)
+    
+
 def audit_file(filename, fields):
     fieldtypes = {}
 
     # YOUR CODE HERE
-
-
+    with open(filename, "r") as f:
+        reader = csv.DictReader(f)
+        header = reader.fieldnames
+        
+        #jump over schema'esque lines
+        reader.next()
+        reader.next()
+        reader.next()
+        
+        for row in reader:
+            
+            for field in fields:
+                
+                s = fieldtypes.get(field, set())
+                s.add(getType(row[field]))      
+                fieldtypes[field] = s
+    
     return fieldtypes
 
 
@@ -38,7 +74,7 @@ def test():
     fieldtypes = audit_file(CITIES, FIELDS)
 
     pprint.pprint(fieldtypes)
-
+    
     assert fieldtypes["areaLand"] == set([type(1.1), type([]), type(None)])
     assert fieldtypes['areaMetro'] == set([type(1.1), type(None)])
     

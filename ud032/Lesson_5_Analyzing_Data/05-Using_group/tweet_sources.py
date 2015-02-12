@@ -32,6 +32,13 @@ def get_db(db_name):
 def make_pipeline():
     # complete the aggregation pipeline
     pipeline = []
+    
+    group = { "$group" : {"_id" : "$source", "count" : {"$sum" : 1}}}    
+    sort = {"$sort" : {"count" : -1}}
+    
+    pipeline.append(group)
+    pipeline.append(sort)
+    
     return pipeline
 
 def tweet_sources(db, pipeline):
@@ -39,8 +46,17 @@ def tweet_sources(db, pipeline):
     return result
 
 if __name__ == '__main__':
+    
+    #(rahaugh) note that I imported twitter data obtained from udacity
+    #and plonked in the Lesson_5_Analyzing_Data directory with:
+    #
+    #mongoimport --db twitter --collection tweets --file twitter.json
+    
     db = get_db('twitter')
     pipeline = make_pipeline()
     result = tweet_sources(db, pipeline)
     import pprint
+    #for i in range(5):
+    #    print(result['result'][i])
+
     pprint.pprint(result)

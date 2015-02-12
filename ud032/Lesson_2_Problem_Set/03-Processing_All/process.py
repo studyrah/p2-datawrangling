@@ -43,10 +43,34 @@ def process_file(f):
     info = {}
     info["courier"], info["airport"] = f[:6].split("-")
     
+    
     with open("{}/{}".format(datadir, f), "r") as html:
 
         soup = BeautifulSoup(html)
+        
+        t = soup.find("table", class_="dataTDRight")
+        
+        for tr in t.find_all("tr", class_="dataTDRight"):
+            datarow = tr.find_all("td")
+            
+            month = datarow[1].text
 
+            if month != "TOTAL":            
+            
+                year = int(datarow[0].text)
+                month = int(datarow[1].text)
+            
+                #note that domestic/international are of form "222,0234"
+                #remove commas to parse into an int
+                domestic = int(datarow[2].text.replace(",",""))
+                international = int(datarow[3].text.replace(",",""))
+                
+                if month != "TOTAL":
+                    data.append({"courier" : info["courier"], "airport" : info["airport"], 
+                                 "year": year, "month" : month,
+                                 "flights": {"domestic": domestic,
+                                             "international": international}})
+                
     return data
 
 
@@ -65,5 +89,25 @@ def test():
         assert len(entry["courier"]) == 2
     print "... success!"
 
+def test_local():
+    print "Running a simple test..."
+    #open_zip(datadir)
+    #files = process_all(datadir)
+    
+    files = []
+    files.append("FL-ATL.html")
+    
+    data = []
+    for f in files:
+        data += process_file(f)
+    assert len(data) == 3
+    for entry in data[:3]:
+        assert type(entry["year"]) == int
+        assert type(entry["flights"]["domestic"]) == int
+        assert len(entry["airport"]) == 3
+        assert len(entry["courier"]) == 2
+    print "... success!"
+
 if __name__ == "__main__":
-    test()
+    #test()
+    test_local()

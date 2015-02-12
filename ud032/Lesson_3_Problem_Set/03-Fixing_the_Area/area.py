@@ -20,11 +20,58 @@ import pprint
 CITIES = 'cities.csv'
 
 
+def getType(value):
+    if value == "NULL" or value == "":                
+        return type(None)
+    
+    if value.startswith("{"):
+        return type([])
+        
+    try:
+        i = int(value)
+        return type(i)
+        
+    except:
+        pass
+    
+    try:    
+        f = float(value)
+        return type(f)
+    except:    
+        return type(value)
+
+
+
+
 def fix_area(area):
 
     # YOUR CODE HERE
+    ftype = getType(area)
+      
+    if ftype == type(1) or ftype == type(1.1):
+        return area
+        
+    if ftype == type([]):
 
-    return area
+        area = area.strip("{")
+        area = area.strip("}")
+        
+        candidates = area.split("|")
+        
+        maxsd = 0
+        best = ""
+        for cand in candidates:
+            if getType(cand) == type(1.1):
+                #for longer sig digs I think it is ok to count length up to e
+                sd = cand.find('e')
+                if sd > maxsd:                                        
+                    maxsd = sd
+                    best = cand
+        
+        return float(best)
+    
+    #type is string or None                            
+    return None
 
 
 
