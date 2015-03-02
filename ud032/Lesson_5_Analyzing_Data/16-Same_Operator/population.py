@@ -43,21 +43,15 @@ def make_pipeline():
         {
             "$group" : {
                 "_id" : "$isPartOf",
-                "city_pops" : {"$push" : "$population"}
+                "city_avg" : {"$avg" : "$population"}
             }
         },
-        {
-            "$unwind" : "$city_pops"
-        },        
         {
             "$group" : {
-                "_id" : "$_id",
-                "city_avg" : {"$avg" : "$city_pops"},
+                "_id" : "India Regional City Population Average",
+                "avg" : {"$avg" : "$city_avg"}
             }
-        },
-        {
-            "$project" : {"avg" : {"$avg" : "$city_avg"}}
-        }               
+        }
     ]
     return pipeline
 
