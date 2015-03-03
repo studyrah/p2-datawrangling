@@ -1,0 +1,1148 @@
+[Dataset Selection]
+===================
+
+cardiff-newport-bristol-bath_england.osm
+
+As it was the closest pre-prepared data set to home (though not that close!)
+
+Retrieved From:
+
+Mapzen.com/metro-extracts
+
+https://s3.amazonaws.com/metro-extracts.mapzen.com/cardiff-newport-bristol-bath_england.osm.bz2
+
+Extract:
+
+bzip2 -d cardiff-newport-bristol-bath_england.osm.bz2
+
+Filesize: 436MB
+Rows (not that it's a csv so it doesn't really count): 6,173,030
+
+[Project Structure]
+===================
+
+~/nanodegree/p2-datawrangling/ud032/Lesson_6_OSM/project/
+
+./data
+./src
+
+[Basic Data Analysis]
+=====================
+
+1. tagcount.py
+
+2. {regex}
+
+3. distinctusers.py
+
+4. streetaudit.py
+
+5. data.py
+
+This converts the data to json for mongo loading.
+
+(note don't currently do any street name conversion)
+
+I had to change the 'type' field name to 'etype' so as not to clash with
+tags also called 'type'
+
+I had to do a bit of work to ingest timestamp recognisably
+
+Change to output pretty = False cos it has orders of magnitude impact on ingest
+
+python data.py
+
+6. Initialise mongo db
+
+mongo
+use osm
+db.createCollection('wwww')
+
+7.  Ingest data
+
+cd ~/nanodegree/p2-datawrangling/ud032/Lesson_6_OSM/project/data
+mongoimport --db osm --collection wwww --file cardiff-newport-bristol-bath_england.osm.json
+
+runs at about 6000 records per sec
+
+8.  Querying Mongo
+
+cd ~/nanodegree/p2-datawrangling/ud032/Lesson_6_OSM/project/src/queries
+
+I set up query.py that will take a json aggregation (or possibly any query)
+from a file (I guess pipeline is a better description), execute it and spit
+results to stdout
+
+python query.py -f <qry file> -d <db> -c <coll> > <someoutfile>
+
+e.g.
+
+python query.py -f user_summary.json -d osm -c wwww > ../../output/user_summary.json
+
+9. Some queries
+
+user_summary.json - user and count of contribution, descending order
+type_by_user_summary.json - count of each type for each user, descending order on user contributions
+
+
+10. Map Reduce
+
+Sometimes its amazingly hard to do simple things like 'find out what fields there are in your collection'
+( ref - http://geoff.com.au/content/get-list-all-fields-mongodb-collection)
+n.b. I ammended the m/r job to also output count
+
+# mr job actually creates a collection wwww_keys
+mr = db.runCommand({   "mapreduce" : "wwww",   "map" : function() {     for (var key in this) { emit(key, 1); }   },   "reduce" : function(key, values) { return Array.sum(values); },   "out": "wwww" + "_keys" })
+
+# batch size means pages size default is 20 so up it
+DBQuery.shellBatchSize = 2000
+
+#now just print the results
+db.wwww_keys.find().sort({"value" : -1}).pretty()
+
+{ "_id" : "_id", "value" : 2353149 }
+{ "_id" : "created", "value" : 2353149 }
+{ "_id" : "etype", "value" : 2353149 }
+{ "_id" : "id", "value" : 2353149 }
+{ "_id" : "pos", "value" : 2093098 }
+{ "_id" : "node_refs", "value" : 260051 }
+{ "_id" : "highway", "value" : 139817 }
+{ "_id" : "name", "value" : 87932 }
+{ "_id" : "building", "value" : 70693 }
+{ "_id" : "source", "value" : 70124 }
+{ "_id" : "barrier", "value" : 28165 }
+{ "_id" : "address", "value" : 27313 }
+{ "_id" : "created_by", "value" : 22798 }
+{ "_id" : "foot", "value" : 21925 }
+{ "_id" : "oneway", "value" : 18552 }
+{ "_id" : "amenity", "value" : 17447 }
+{ "_id" : "maxspeed", "value" : 15058 }
+{ "_id" : "surface", "value" : 14416 }
+{ "_id" : "landuse", "value" : 12720 }
+{ "_id" : "bicycle", "value" : 12532 }
+{ "_id" : "lanes", "value" : 11417 }
+{ "_id" : "service", "value" : 10590 }
+{ "_id" : "natural", "value" : 9562 }
+{ "_id" : "ref", "value" : 9405 }
+{ "_id" : "waterway", "value" : 7816 }
+{ "_id" : "access", "value" : 7766 }
+{ "_id" : "postal_code", "value" : 7567 }
+{ "_id" : "power", "value" : 7220 }
+{ "_id" : "source:name", "value" : 7217 }
+{ "_id" : "sidewalk", "value" : 7164 }
+{ "_id" : "cycleway", "value" : 7123 }
+{ "_id" : "naptan:AtcoCode", "value" : 6343 }
+{ "_id" : "naptan:CommonName", "value" : 6227 }
+{ "_id" : "naptan:NaptanCode", "value" : 6227 }
+{ "_id" : "naptan:Street", "value" : 6227 }
+{ "_id" : "naptan:Bearing", "value" : 6217 }
+{ "_id" : "naptan:verified", "value" : 5866 }
+{ "_id" : "layer", "value" : 4753 }
+{ "_id" : "naptan:Crossing", "value" : 4446 }
+{ "_id" : "leisure", "value" : 4374 }
+{ "_id" : "shop", "value" : 4312 }
+{ "_id" : "bridge", "value" : 4163 }
+{ "_id" : "railway", "value" : 3963 }
+{ "_id" : "horse", "value" : 3938 }
+{ "_id" : "boat", "value" : 3876 }
+{ "_id" : "motor_vehicle", "value" : 3637 }
+{ "_id" : "naptan:PlusbusZoneRef", "value" : 3514 }
+{ "_id" : "note", "value" : 3431 }
+{ "_id" : "operator", "value" : 2678 }
+{ "_id" : "source:track", "value" : 2344 }
+{ "_id" : "area", "value" : 2222 }
+{ "_id" : "source:outline", "value" : 2083 }
+{ "_id" : "website", "value" : 1818 }
+{ "_id" : "sport", "value" : 1757 }
+{ "_id" : "fixme", "value" : 1735 }
+{ "_id" : "crossing", "value" : 1595 }
+{ "_id" : "electrified", "value" : 1551 }
+{ "_id" : "gauge", "value" : 1527 }
+{ "_id" : "designation", "value" : 1488 }
+{ "_id" : "junction", "value" : 1481 }
+{ "_id" : "boundary", "value" : 1354 }
+{ "_id" : "admin_level", "value" : 1321 }
+{ "_id" : "place", "value" : 1309 }
+{ "_id" : "lit", "value" : 1261 }
+{ "_id" : "tourism", "value" : 1251 }
+{ "_id" : "name:cy", "value" : 1191 }
+{ "_id" : "building:levels", "value" : 1166 }
+{ "_id" : "man_made", "value" : 1148 }
+{ "_id" : "tunnel", "value" : 1067 }
+{ "_id" : "not:name", "value" : 1029 }
+{ "_id" : "religion", "value" : 1017 }
+{ "_id" : "cuisine", "value" : 987 }
+{ "_id" : "parking", "value" : 966 }
+{ "_id" : "crossing_ref", "value" : 937 }
+{ "_id" : "phone", "value" : 846 }
+{ "_id" : "segregated", "value" : 836 }
+{ "_id" : "usage", "value" : 750 }
+{ "_id" : "capacity", "value" : 700 }
+{ "_id" : "direction", "value" : 689 }
+{ "_id" : "is_in", "value" : 685 }
+{ "_id" : "denomination", "value" : 669 }
+{ "_id" : "source:maxspeed", "value" : 644 }
+{ "_id" : "tracktype", "value" : 637 }
+{ "_id" : "alt_name", "value" : 607 }
+{ "_id" : "historic", "value" : 566 }
+{ "_id" : "traffic_calming", "value" : 562 }
+{ "_id" : "source_ref", "value" : 530 }
+{ "_id" : "FIXME", "value" : 521 }
+{ "_id" : "proposed:electrified", "value" : 499 }
+{ "_id" : "proposed:frequency", "value" : 499 }
+{ "_id" : "naptan:Landmark", "value" : 493 }
+{ "_id" : "highways_agency:area", "value" : 487 }
+{ "_id" : "proposed:voltage", "value" : 481 }
+{ "_id" : "old_ref", "value" : 449 }
+{ "_id" : "source:ref", "value" : 441 }
+{ "_id" : "naptan:Indicator", "value" : 433 }
+{ "_id" : "source:addr", "value" : 419 }
+{ "_id" : "wheelchair", "value" : 404 }
+{ "_id" : "carriageway_ref", "value" : 387 }
+{ "_id" : "covered", "value" : 376 }
+{ "_id" : "ele", "value" : 371 }
+{ "_id" : "information", "value" : 348 }
+{ "_id" : "noexit", "value" : 347 }
+{ "_id" : "naptan:BusStopType", "value" : 337 }
+{ "_id" : "roof:levels", "value" : 335 }
+{ "_id" : "entrance", "value" : 322 }
+{ "_id" : "material", "value" : 306 }
+{ "_id" : "office", "value" : 304 }
+{ "_id" : "wikipedia", "value" : 301 }
+{ "_id" : "shelter", "value" : 299 }
+{ "_id" : "backrest", "value" : 290 }
+{ "_id" : "survey:date", "value" : 286 }
+{ "_id" : "post_box:type", "value" : 285 }
+{ "_id" : "name:en", "value" : 284 }
+{ "_id" : "fee", "value" : 278 }
+{ "_id" : "voltage", "value" : 278 }
+{ "_id" : "local_ref", "value" : 275 }
+{ "_id" : "opening_hours", "value" : 265 }
+{ "_id" : "royal_cypher", "value" : 265 }
+{ "_id" : "ncn_ref", "value" : 262 }
+{ "_id" : "tracks", "value" : 259 }
+{ "_id" : "telephone", "value" : 258 }
+{ "_id" : "width", "value" : 241 }
+{ "_id" : "building:use", "value" : 240 }
+{ "_id" : "cables", "value" : 238 }
+{ "_id" : "email", "value" : 223 }
+{ "_id" : "source:addr:housenumber", "value" : 223 }
+{ "_id" : "collection_times", "value" : 221 }
+{ "_id" : "motorcar", "value" : 220 }
+{ "_id" : "history", "value" : 219 }
+{ "_id" : "old_name", "value" : 210 }
+{ "_id" : "bicycle_parking", "value" : 206 }
+{ "_id" : "board_type", "value" : 203 }
+{ "_id" : "FIXME:nsl", "value" : 189 }
+{ "_id" : "fhrs:id", "value" : 186 }
+{ "_id" : "description", "value" : 185 }
+{ "_id" : "name:source", "value" : 185 }
+{ "_id" : "incline", "value" : 180 }
+{ "_id" : "water", "value" : 179 }
+{ "_id" : "golf", "value" : 176 }
+{ "_id" : "odbl", "value" : 175 }
+{ "_id" : "ref_carriageway", "value" : 175 }
+{ "_id" : "disused", "value" : 171 }
+{ "_id" : "psv", "value" : 166 }
+{ "_id" : "ncn", "value" : 165 }
+{ "_id" : "source:postcode", "value" : 156 }
+{ "_id" : "embankment", "value" : 151 }
+{ "_id" : "stile", "value" : 149 }
+{ "_id" : "colour", "value" : 148 }
+{ "_id" : "source:address", "value" : 146 }
+{ "_id" : "start_date", "value" : 145 }
+{ "_id" : "railway:historic", "value" : 144 }
+{ "_id" : "hgv", "value" : 142 }
+{ "_id" : "seats", "value" : 138 }
+{ "_id" : "loc_name", "value" : 137 }
+{ "_id" : "aeroway", "value" : 129 }
+{ "_id" : "maxweight", "value" : 129 }
+{ "_id" : "est_width", "value" : 128 }
+{ "_id" : "route_ref", "value" : 128 }
+{ "_id" : "place_numbers", "value" : 124 }
+{ "_id" : "brand", "value" : 122 }
+{ "_id" : "atm", "value" : 116 }
+{ "_id" : "motorcycle", "value" : 116 }
+{ "_id" : "cycleway:left", "value" : 112 }
+{ "_id" : "url", "value" : 109 }
+{ "_id" : "building:type", "value" : 106 }
+{ "_id" : "loc_ref", "value" : 104 }
+{ "_id" : "plaque", "value" : 102 }
+{ "_id" : "level", "value" : 101 }
+{ "_id" : "seamark:type", "value" : 96 }
+{ "_id" : "survey", "value" : 96 }
+{ "_id" : "food", "value" : 93 }
+{ "_id" : "step_count", "value" : 91 }
+{ "_id" : "maxspeed:type", "value" : 87 }
+{ "_id" : "lcn", "value" : 85 }
+{ "_id" : "floating", "value" : 84 }
+{ "_id" : "wires", "value" : 83 }
+{ "_id" : "route", "value" : 82 }
+{ "_id" : "artwork_type", "value" : 81 }
+{ "_id" : "complete", "value" : 81 }
+{ "_id" : "uk_postcode_centroid", "value" : 79 }
+{ "_id" : "passenger", "value" : 78 }
+{ "_id" : "seamark:light:reference", "value" : 74 }
+{ "_id" : "emergency", "value" : 73 }
+{ "_id" : "real_ale", "value" : 73 }
+{ "_id" : "seamark:light:colour", "value" : 73 }
+{ "_id" : "source:building", "value" : 73 }
+{ "_id" : "facebook", "value" : 72 }
+{ "_id" : "twitter", "value" : 72 }
+{ "_id" : "park_ride", "value" : 68 }
+{ "_id" : "seamark:light:character", "value" : 68 }
+{ "_id" : "towpath", "value" : 68 }
+{ "_id" : "trail_colour", "value" : 68 }
+{ "_id" : "mtb:scale", "value" : 66 }
+{ "_id" : "rcn_ref", "value" : 64 }
+{ "_id" : "power_source", "value" : 63 }
+{ "_id" : "cutting", "value" : 61 }
+{ "_id" : "is_in:historic_county", "value" : 61 }
+{ "_id" : "circuits", "value" : 59 }
+{ "_id" : "substation", "value" : 59 }
+{ "_id" : "disused:amenity", "value" : 58 }
+{ "_id" : "maxheight", "value" : 58 }
+{ "_id" : "type", "value" : 58 }
+{ "_id" : "design", "value" : 57 }
+{ "_id" : "seamark:light:height", "value" : 57 }
+{ "_id" : "leaf_type", "value" : 56 }
+{ "_id" : "proposed", "value" : 56 }
+{ "_id" : "wood", "value" : 55 }
+{ "_id" : "campus", "value" : 54 }
+{ "_id" : "image", "value" : 54 }
+{ "_id" : "naptan:ShortCommonName", "value" : 53 }
+{ "_id" : "capacity:disabled", "value" : 52 }
+{ "_id" : "construction", "value" : 51 }
+{ "_id" : "ford", "value" : 51 }
+{ "_id" : "dispensing", "value" : 50 }
+{ "_id" : "public_transport", "value" : 49 }
+{ "_id" : "trail_visibility", "value" : 49 }
+{ "_id" : "seamark:light:range", "value" : 48 }
+{ "_id" : "seamark:light_minor:height", "value" : 48 }
+{ "_id" : "fax", "value" : 46 }
+{ "_id" : "fence_type", "value" : 46 }
+{ "_id" : "lanes:backward", "value" : 46 }
+{ "_id" : "bridge_ref", "value" : 45 }
+{ "_id" : "footway", "value" : 44 }
+{ "_id" : "clothes", "value" : 43 }
+{ "_id" : "cycleway:right", "value" : 43 }
+{ "_id" : "generator:source", "value" : 43 }
+{ "_id" : "passenger_lines", "value" : 43 }
+{ "_id" : "smoking", "value" : 43 }
+{ "_id" : "lanes:forward", "value" : 42 }
+{ "_id" : "takeaway", "value" : 41 }
+{ "_id" : "contact:website", "value" : 40 }
+{ "_id" : "contact:phone", "value" : 39 }
+{ "_id" : "wifi", "value" : 38 }
+{ "_id" : "seamark:light:category", "value" : 37 }
+{ "_id" : "exit_to", "value" : 36 }
+{ "_id" : "abutters", "value" : 35 }
+{ "_id" : "contact:facebook", "value" : 35 }
+{ "_id" : "toll", "value" : 35 }
+{ "_id" : "photo", "value" : 34 }
+{ "_id" : "storage_tank:position", "value" : 34 }
+{ "_id" : "construction:active_traffic_management", "value" : 32 }
+{ "_id" : "wpt_description", "value" : 32 }
+{ "_id" : "bus", "value" : 31 }
+{ "_id" : "seamark:light:period", "value" : 30 }
+{ "_id" : "tower:type", "value" : 30 }
+{ "_id" : "bench", "value" : 29 }
+{ "_id" : "busway", "value" : 29 }
+{ "_id" : "residential", "value" : 29 }
+{ "_id" : "lock", "value" : 28 }
+{ "_id" : "note:name", "value" : 28 }
+{ "_id" : "seamark:information", "value" : 28 }
+{ "_id" : "taxon", "value" : 28 }
+{ "_id" : "internet_access", "value" : 27 }
+{ "_id" : "ramp", "value" : 27 }
+{ "_id" : "species", "value" : 27 }
+{ "_id" : "surveillance:type", "value" : 27 }
+{ "_id" : "contents", "value" : 25 }
+{ "_id" : "designated", "value" : 25 }
+{ "_id" : "military", "value" : 25 }
+{ "_id" : "culvert", "value" : 24 }
+{ "_id" : "location", "value" : 24 }
+{ "_id" : "recycling:clothes", "value" : 24 }
+{ "_id" : "site_type", "value" : 24 }
+{ "_id" : "source:access", "value" : 24 }
+{ "_id" : "species:en", "value" : 24 }
+{ "_id" : "todo", "value" : 24 }
+{ "_id" : "ELR", "value" : 23 }
+{ "_id" : "disused:shop", "value" : 23 }
+{ "_id" : "female", "value" : 23 }
+{ "_id" : "gate", "value" : 23 }
+{ "_id" : "male", "value" : 23 }
+{ "_id" : "music", "value" : 23 }
+{ "_id" : "ncn_milepost", "value" : 23 }
+{ "_id" : "seamark:name", "value" : 23 }
+{ "_id" : "supervised", "value" : 23 }
+{ "_id" : "distance", "value" : 22 }
+{ "_id" : "recycling_type", "value" : 22 }
+{ "_id" : "network", "value" : 21 }
+{ "_id" : "official_ref", "value" : 21 }
+{ "_id" : "snowmobile", "value" : 21 }
+{ "_id" : "social_facility", "value" : 21 }
+{ "_id" : "vehicle", "value" : 21 }
+{ "_id" : "bridge:name", "value" : 20 }
+{ "_id" : "frequency", "value" : 20 }
+{ "_id" : "oneway:bicycle", "value" : 20 }
+{ "_id" : "trade", "value" : 20 }
+{ "_id" : "fuel:diesel", "value" : 19 }
+{ "_id" : "genus", "value" : 19 }
+{ "_id" : "landcover", "value" : 19 }
+{ "_id" : "lock_name", "value" : 19 }
+{ "_id" : "sac_scale", "value" : 19 }
+{ "_id" : "contact:email", "value" : 18 }
+{ "_id" : "detail", "value" : 18 }
+{ "_id" : "maxwidth", "value" : 18 }
+{ "_id" : "payment:coins", "value" : 18 }
+{ "_id" : "tactile_paving", "value" : 18 }
+{ "_id" : "comment", "value" : 17 }
+{ "_id" : "contact:twitter", "value" : 17 }
+{ "_id" : "generator:method", "value" : 17 }
+{ "_id" : "genus:en", "value" : 17 }
+{ "_id" : "healthcare", "value" : 17 }
+{ "_id" : "leaf_cycle", "value" : 17 }
+{ "_id" : "official_name", "value" : 17 }
+{ "_id" : "source:geometry", "value" : 17 }
+{ "_id" : "sustrans_ref", "value" : 17 }
+{ "_id" : "toilets", "value" : 17 }
+{ "_id" : "abandoned", "value" : 16 }
+{ "_id" : "amenity:disused", "value" : 16 }
+{ "_id" : "architect", "value" : 16 }
+{ "_id" : "artist_name", "value" : 16 }
+{ "_id" : "golf:course", "value" : 16 }
+{ "_id" : "landmark", "value" : 16 }
+{ "_id" : "recycling:glass", "value" : 16 }
+{ "_id" : "seamark:light:multiple", "value" : 16 }
+{ "_id" : "smoothness", "value" : 16 }
+{ "_id" : "toilets:access", "value" : 16 }
+{ "_id" : "golf:par", "value" : 15 }
+{ "_id" : "owner", "value" : 15 }
+{ "_id" : "recycling:cans", "value" : 15 }
+{ "_id" : "right:county", "value" : 15 }
+{ "_id" : "surveillance", "value" : 15 }
+{ "_id" : "fuel:octane_95", "value" : 14 }
+{ "_id" : "lock_ref", "value" : 14 }
+{ "_id" : "memorial", "value" : 14 }
+{ "_id" : "osmarender:renderName", "value" : 14 }
+{ "_id" : "drive_through", "value" : 13 }
+{ "_id" : "garden", "value" : 13 }
+{ "_id" : "historic:building", "value" : 13 }
+{ "_id" : "left:county", "value" : 13 }
+{ "_id" : "seamark:light:sequence", "value" : 13 }
+{ "_id" : "source:description", "value" : 13 }
+{ "_id" : "highspeed", "value" : 12 }
+{ "_id" : "payment:bitcoin", "value" : 12 }
+{ "_id" : "post_box:apertures", "value" : 12 }
+{ "_id" : "recycling:paper", "value" : 12 }
+{ "_id" : "seamark:light:visibility", "value" : 12 }
+{ "_id" : "social_facility:for", "value" : 12 }
+{ "_id" : "southglos:heritagetrail", "value" : 12 }
+{ "_id" : "craft", "value" : 11 }
+{ "_id" : "disused:railway", "value" : 11 }
+{ "_id" : "generator:type", "value" : 11 }
+{ "_id" : "int_name", "value" : 11 }
+{ "_id" : "listed_status", "value" : 11 }
+{ "_id" : "maxstay", "value" : 11 }
+{ "_id" : "mtb:type", "value" : 11 }
+{ "_id" : "name:left", "value" : 11 }
+{ "_id" : "southglos:food", "value" : 11 }
+{ "_id" : "beer_garden", "value" : 10 }
+{ "_id" : "kerb", "value" : 10 }
+{ "_id" : "lanes:psv:forward", "value" : 10 }
+{ "_id" : "mkgmap:flare-check", "value" : 10 }
+{ "_id" : "note:postal_code", "value" : 10 }
+{ "_id" : "organic", "value" : 10 }
+{ "_id" : "pipeline_contents", "value" : 10 }
+{ "_id" : "pipeline_network", "value" : 10 }
+{ "_id" : "review", "value" : 10 }
+{ "_id" : "source:highway", "value" : 10 }
+{ "_id" : "steps", "value" : 10 }
+{ "_id" : "traffic_sign:backward", "value" : 10 }
+{ "_id" : "wheelchair:description", "value" : 10 }
+{ "_id" : "bridge:movable", "value" : 9 }
+{ "_id" : "bus_name", "value" : 9 }
+{ "_id" : "capacity:parent", "value" : 9 }
+{ "_id" : "end_date", "value" : 9 }
+{ "_id" : "name:right", "value" : 9 }
+{ "_id" : "place_name", "value" : 9 }
+{ "_id" : "seamark:light:group", "value" : 9 }
+{ "_id" : "shop:units", "value" : 9 }
+{ "_id" : "station_name", "value" : 9 }
+{ "_id" : "station_no.", "value" : 9 }
+{ "_id" : "taxi", "value" : 9 }
+{ "_id" : "units", "value" : 9 }
+{ "_id" : "books", "value" : 8 }
+{ "_id" : "box_type", "value" : 8 }
+{ "_id" : "bridge_name", "value" : 8 }
+{ "_id" : "diaper", "value" : 8 }
+{ "_id" : "goods", "value" : 8 }
+{ "_id" : "lcn_name", "value" : 8 }
+{ "_id" : "line", "value" : 8 }
+{ "_id" : "narrow", "value" : 8 }
+{ "_id" : "paved", "value" : 8 }
+{ "_id" : "place_name:cy", "value" : 8 }
+{ "_id" : "recycling:plastic", "value" : 8 }
+{ "_id" : "school", "value" : 8 }
+{ "_id" : "seamark:buoy_lateral:category", "value" : 8 }
+{ "_id" : "seamark:buoy_lateral:colour", "value" : 8 }
+{ "_id" : "seamark:buoy_lateral:shape", "value" : 8 }
+{ "_id" : "seamark:buoy_lateral:system", "value" : 8 }
+{ "_id" : "seamark:light:1:character", "value" : 8 }
+{ "_id" : "seamark:light:1:colour", "value" : 8 }
+{ "_id" : "seamark:light:1:height", "value" : 8 }
+{ "_id" : "seamark:light:1:period", "value" : 8 }
+{ "_id" : "seamark:light:1:range", "value" : 8 }
+{ "_id" : "seamark:light:1:sector_end", "value" : 8 }
+{ "_id" : "seamark:light:1:sector_start", "value" : 8 }
+{ "_id" : "tents", "value" : 8 }
+{ "_id" : "wikipedia:en", "value" : 8 }
+{ "_id" : "car", "value" : 7 }
+{ "_id" : "construction_contract_name", "value" : 7 }
+{ "_id" : "display", "value" : 7 }
+{ "_id" : "height", "value" : 7 }
+{ "_id" : "historic:highway", "value" : 7 }
+{ "_id" : "historic:railway", "value" : 7 }
+{ "_id" : "internet_access:fee", "value" : 7 }
+{ "_id" : "map_size", "value" : 7 }
+{ "_id" : "name:lt", "value" : 7 }
+{ "_id" : "name:ru", "value" : 7 }
+{ "_id" : "ref_no", "value" : 7 }
+{ "_id" : "reservoir_type", "value" : 7 }
+{ "_id" : "roundabout", "value" : 7 }
+{ "_id" : "seamark:fog_signal:category", "value" : 7 }
+{ "_id" : "seamark:light:2:character", "value" : 7 }
+{ "_id" : "seamark:light:2:colour", "value" : 7 }
+{ "_id" : "seamark:light:2:height", "value" : 7 }
+{ "_id" : "seamark:light:2:range", "value" : 7 }
+{ "_id" : "towards", "value" : 7 }
+{ "_id" : "wetland", "value" : 7 }
+{ "_id" : "alcohol", "value" : 6 }
+{ "_id" : "booth", "value" : 6 }
+{ "_id" : "capacity:women", "value" : 6 }
+{ "_id" : "club", "value" : 6 }
+{ "_id" : "company", "value" : 6 }
+{ "_id" : "destination", "value" : 6 }
+{ "_id" : "disused:highway", "value" : 6 }
+{ "_id" : "fenced", "value" : 6 }
+{ "_id" : "healthcare:speciality", "value" : 6 }
+{ "_id" : "icao", "value" : 6 }
+{ "_id" : "is_in:country", "value" : 6 }
+{ "_id" : "lanes:left", "value" : 6 }
+{ "_id" : "left:country", "value" : 6 }
+{ "_id" : "map_type", "value" : 6 }
+{ "_id" : "microbrewery", "value" : 6 }
+{ "_id" : "name:uk", "value" : 6 }
+{ "_id" : "note2", "value" : 6 }
+{ "_id" : "outdoor_seating", "value" : 6 }
+{ "_id" : "population", "value" : 6 }
+{ "_id" : "recycling:cardboard", "value" : 6 }
+{ "_id" : "right:country", "value" : 6 }
+{ "_id" : "seamark:fog_signal:group", "value" : 6 }
+{ "_id" : "seamark:fog_signal:period", "value" : 6 }
+{ "_id" : "seamark:light:1:sequence", "value" : 6 }
+{ "_id" : "seamark:light:2:period", "value" : 6 }
+{ "_id" : "seamark:light:2:sector_end", "value" : 6 }
+{ "_id" : "seamark:light:2:sector_start", "value" : 6 }
+{ "_id" : "shelter_type", "value" : 6 }
+{ "_id" : "source:voltage", "value" : 6 }
+{ "_id" : "wpt_symbol", "value" : 6 }
+{ "_id" : "building:demolished", "value" : 5 }
+{ "_id" : "busway:right", "value" : 5 }
+{ "_id" : "caravans", "value" : 5 }
+{ "_id" : "crop", "value" : 5 }
+{ "_id" : "currency:GBP", "value" : 5 }
+{ "_id" : "diet:vegetarian", "value" : 5 }
+{ "_id" : "fuel:lpg", "value" : 5 }
+{ "_id" : "furniture", "value" : 5 }
+{ "_id" : "indoor", "value" : 5 }
+{ "_id" : "lanes:psv", "value" : 5 }
+{ "_id" : "lcn_ref", "value" : 5 }
+{ "_id" : "level_crossing", "value" : 5 }
+{ "_id" : "link:twitter", "value" : 5 }
+{ "_id" : "memorial:type", "value" : 5 }
+{ "_id" : "ncn_name", "value" : 5 }
+{ "_id" : "payment:credit_cards", "value" : 5 }
+{ "_id" : "payment:debit_cards", "value" : 5 }
+{ "_id" : "private", "value" : 5 }
+{ "_id" : "ramp:bicycle", "value" : 5 }
+{ "_id" : "real_cider", "value" : 5 }
+{ "_id" : "recycling:glass_bottles", "value" : 5 }
+{ "_id" : "recycling:plastic_bottles", "value" : 5 }
+{ "_id" : "rrier", "value" : 5 }
+{ "_id" : "seamark:light:3:character", "value" : 5 }
+{ "_id" : "seamark:light:3:colour", "value" : 5 }
+{ "_id" : "seamark:light:3:height", "value" : 5 }
+{ "_id" : "seamark:light:3:range", "value" : 5 }
+{ "_id" : "seating", "value" : 5 }
+{ "_id" : "source:amenity", "value" : 5 }
+{ "_id" : "stars", "value" : 5 }
+{ "_id" : "train", "value" : 5 }
+{ "_id" : "wall", "value" : 5 }
+{ "_id" : "alt_name:cy", "value" : 4 }
+{ "_id" : "brewery", "value" : 4 }
+{ "_id" : "cargo", "value" : 4 }
+{ "_id" : "communication", "value" : 4 }
+{ "_id" : "cyclestreets_id", "value" : 4 }
+{ "_id" : "drinkable", "value" : 4 }
+{ "_id" : "fortification_type", "value" : 4 }
+{ "_id" : "fuel:HGV_diesel", "value" : 4 }
+{ "_id" : "fuel:octane_98", "value" : 4 }
+{ "_id" : "gambling", "value" : 4 }
+{ "_id" : "garden:type", "value" : 4 }
+{ "_id" : "gay", "value" : 4 }
+{ "_id" : "hiking", "value" : 4 }
+{ "_id" : "historic:barrier", "value" : 4 }
+{ "_id" : "hov", "value" : 4 }
+{ "_id" : "iata", "value" : 4 }
+{ "_id" : "invalid_carriage", "value" : 4 }
+{ "_id" : "is_in:continent", "value" : 4 }
+{ "_id" : "is_in:country_code", "value" : 4 }
+{ "_id" : "maxcc", "value" : 4 }
+{ "_id" : "monument", "value" : 4 }
+{ "_id" : "mooring", "value" : 4 }
+{ "_id" : "moped", "value" : 4 }
+{ "_id" : "name:fr", "value" : 4 }
+{ "_id" : "name:sr", "value" : 4 }
+{ "_id" : "payment:telephone_cards", "value" : 4 }
+{ "_id" : "priority", "value" : 4 }
+{ "_id" : "recycling:batteries", "value" : 4 }
+{ "_id" : "recycling:scrap_metal", "value" : 4 }
+{ "_id" : "seamark:landmark:height", "value" : 4 }
+{ "_id" : "seamark:light:1:group", "value" : 4 }
+{ "_id" : "seamark:light:2:sequence", "value" : 4 }
+{ "_id" : "seamark:light:3:period", "value" : 4 }
+{ "_id" : "seamark:light:3:sector_end", "value" : 4 }
+{ "_id" : "seamark:light:3:sector_start", "value" : 4 }
+{ "_id" : "seamark:light:4:character", "value" : 4 }
+{ "_id" : "seamark:light:4:colour", "value" : 4 }
+{ "_id" : "seamark:light:4:height", "value" : 4 }
+{ "_id" : "seamark:light:4:range", "value" : 4 }
+{ "_id" : "seamark:light_major:height", "value" : 4 }
+{ "_id" : "self_service", "value" : 4 }
+{ "_id" : "ski", "value" : 4 }
+{ "_id" : "source:old_name", "value" : 4 }
+{ "_id" : "southglos:townmap", "value" : 4 }
+{ "_id" : "submarine", "value" : 4 }
+{ "_id" : "traffic_sign:forward", "value" : 4 }
+{ "_id" : "tunnel_name", "value" : 4 }
+{ "_id" : "CEMT", "value" : 3 }
+{ "_id" : "accommodation", "value" : 3 }
+{ "_id" : "aircraft:type", "value" : 3 }
+{ "_id" : "artwork", "value" : 3 }
+{ "_id" : "automated", "value" : 3 }
+{ "_id" : "beauty", "value" : 3 }
+{ "_id" : "bridge:ref", "value" : 3 }
+{ "_id" : "bus_lane", "value" : 3 }
+{ "_id" : "busway:left", "value" : 3 }
+{ "_id" : "church", "value" : 3 }
+{ "_id" : "climbing", "value" : 3 }
+{ "_id" : "climbing:rock", "value" : 3 }
+{ "_id" : "communication:mobile_phone", "value" : 3 }
+{ "_id" : "contact:fax", "value" : 3 }
+{ "_id" : "content", "value" : 3 }
+{ "_id" : "crossing:light", "value" : 3 }
+{ "_id" : "cycleway:left:width", "value" : 3 }
+{ "_id" : "date", "value" : 3 }
+{ "_id" : "date_start", "value" : 3 }
+{ "_id" : "date_started", "value" : 3 }
+{ "_id" : "dismantled", "value" : 3 }
+{ "_id" : "disused:aeroway", "value" : 3 }
+{ "_id" : "doctors", "value" : 3 }
+{ "_id" : "full_name", "value" : 3 }
+{ "_id" : "google_plus", "value" : 3 }
+{ "_id" : "hov:lanes", "value" : 3 }
+{ "_id" : "hov:minimum", "value" : 3 }
+{ "_id" : "industrial", "value" : 3 }
+{ "_id" : "inscription", "value" : 3 }
+{ "_id" : "intermittent", "value" : 3 }
+{ "_id" : "is_in:county", "value" : 3 }
+{ "_id" : "key", "value" : 3 }
+{ "_id" : "lanes:bus:backward", "value" : 3 }
+{ "_id" : "lanes:psv:backward", "value" : 3 }
+{ "_id" : "leftname", "value" : 3 }
+{ "_id" : "locked", "value" : 3 }
+{ "_id" : "megalith_type", "value" : 3 }
+{ "_id" : "motorroad", "value" : 3 }
+{ "_id" : "name:botanical", "value" : 3 }
+{ "_id" : "name:ja", "value" : 3 }
+{ "_id" : "name:la", "value" : 3 }
+{ "_id" : "name:pl", "value" : 3 }
+{ "_id" : "note:postcode", "value" : 3 }
+{ "_id" : "operator:type", "value" : 3 }
+{ "_id" : "path", "value" : 3 }
+{ "_id" : "piste:type", "value" : 3 }
+{ "_id" : "post_box:manufacturer", "value" : 3 }
+{ "_id" : "postcode", "value" : 3 }
+{ "_id" : "recycling:books", "value" : 3 }
+{ "_id" : "recycling:cartons", "value" : 3 }
+{ "_id" : "recycling:electrical_appliances", "value" : 3 }
+{ "_id" : "recycling:magazines", "value" : 3 }
+{ "_id" : "recycling:newspaper", "value" : 3 }
+{ "_id" : "recycling:small_appliances", "value" : 3 }
+{ "_id" : "recycling:wood", "value" : 3 }
+{ "_id" : "rightname", "value" : 3 }
+{ "_id" : "seamark:cable_submarine:category", "value" : 3 }
+{ "_id" : "seamark:light:1:radius", "value" : 3 }
+{ "_id" : "seamark:light:2:group", "value" : 3 }
+{ "_id" : "seamark:light:2:radius", "value" : 3 }
+{ "_id" : "seamark:light:3:group", "value" : 3 }
+{ "_id" : "seamark:light:3:sequence", "value" : 3 }
+{ "_id" : "seamark:light:4:period", "value" : 3 }
+{ "_id" : "seamark:light:4:sector_end", "value" : 3 }
+{ "_id" : "seamark:light:4:sector_start", "value" : 3 }
+{ "_id" : "seamark:light:exhibition", "value" : 3 }
+{ "_id" : "seamark:topmark:colour", "value" : 3 }
+{ "_id" : "seamark:topmark:shape", "value" : 3 }
+{ "_id" : "service:bicycle:repair", "value" : 3 }
+{ "_id" : "service:bicycle:retail", "value" : 3 }
+{ "_id" : "sloped_curb", "value" : 3 }
+{ "_id" : "southglos:parking", "value" : 3 }
+{ "_id" : "toilets:disposal", "value" : 3 }
+{ "_id" : "trachtype", "value" : 3 }
+{ "_id" : "tunnel:name", "value" : 3 }
+{ "_id" : "unknown", "value" : 3 }
+{ "_id" : "use", "value" : 3 }
+{ "_id" : "vending", "value" : 3 }
+{ "_id" : "wetap:status", "value" : 3 }
+{ "_id" : "4x4", "value" : 2 }
+{ "_id" : "LAYER", "value" : 2 }
+{ "_id" : "aerodrome", "value" : 2 }
+{ "_id" : "animal", "value" : 2 }
+{ "_id" : "building:architecture", "value" : 2 }
+{ "_id" : "building:part", "value" : 2 }
+{ "_id" : "bumps", "value" : 2 }
+{ "_id" : "bunker_type", "value" : 2 }
+{ "_id" : "castle_type", "value" : 2 }
+{ "_id" : "city", "value" : 2 }
+{ "_id" : "commonwealth_war_graves", "value" : 2 }
+{ "_id" : "cost", "value" : 2 }
+{ "_id" : "cycleway:otherside:width", "value" : 2 }
+{ "_id" : "delivery", "value" : 2 }
+{ "_id" : "department", "value" : 2 }
+{ "_id" : "descr", "value" : 2 }
+{ "_id" : "dock", "value" : 2 }
+{ "_id" : "driveway", "value" : 2 }
+{ "_id" : "est_height", "value" : 2 }
+{ "_id" : "generator:output:electricity", "value" : 2 }
+{ "_id" : "gns_classification", "value" : 2 }
+{ "_id" : "gns_uni", "value" : 2 }
+{ "_id" : "guest_house", "value" : 2 }
+{ "_id" : "headteacher", "value" : 2 }
+{ "_id" : "hide", "value" : 2 }
+{ "_id" : "historic:civilization", "value" : 2 }
+{ "_id" : "hour_off", "value" : 2 }
+{ "_id" : "hour_on", "value" : 2 }
+{ "_id" : "is_in:parish", "value" : 2 }
+{ "_id" : "is_in:preserved_county", "value" : 2 }
+{ "_id" : "is_in:town", "value" : 2 }
+{ "_id" : "isced:level", "value" : 2 }
+{ "_id" : "lanes:bus", "value" : 2 }
+{ "_id" : "lanes:forward:psv", "value" : 2 }
+{ "_id" : "lifeboat", "value" : 2 }
+{ "_id" : "maxlength", "value" : 2 }
+{ "_id" : "maxweight:hgv:conditional", "value" : 2 }
+{ "_id" : "minister", "value" : 2 }
+{ "_id" : "motor_vehicle:conditional", "value" : 2 }
+{ "_id" : "mrb_note", "value" : 2 }
+{ "_id" : "musical_instrument", "value" : 2 }
+{ "_id" : "myspace", "value" : 2 }
+{ "_id" : "name:eo", "value" : 2 }
+{ "_id" : "name:he", "value" : 2 }
+{ "_id" : "noname", "value" : 2 }
+{ "_id" : "note_2", "value" : 2 }
+{ "_id" : "number_of", "value" : 2 }
+{ "_id" : "old_name:cy", "value" : 2 }
+{ "_id" : "openfire", "value" : 2 }
+{ "_id" : "parking:condition:right", "value" : 2 }
+{ "_id" : "parking:condition:right:maxstay", "value" : 2 }
+{ "_id" : "parking:condition:right:residents", "value" : 2 }
+{ "_id" : "parking:condition:right:time_interval", "value" : 2 }
+{ "_id" : "parking:lane:right", "value" : 2 }
+{ "_id" : "passing_places", "value" : 2 }
+{ "_id" : "pipeline", "value" : 2 }
+{ "_id" : "pitch:count", "value" : 2 }
+{ "_id" : "plant:source", "value" : 2 }
+{ "_id" : "platforms", "value" : 2 }
+{ "_id" : "post_box", "value" : 2 }
+{ "_id" : "predecessor_node", "value" : 2 }
+{ "_id" : "probably_wrong:ref", "value" : 2 }
+{ "_id" : "psv:backwards", "value" : 2 }
+{ "_id" : "recycling:gas_bottles", "value" : 2 }
+{ "_id" : "recycling:green_waste", "value" : 2 }
+{ "_id" : "recycling:paper_packaging", "value" : 2 }
+{ "_id" : "recycling:plastic_bags", "value" : 2 }
+{ "_id" : "recycling:plastic_packaging", "value" : 2 }
+{ "_id" : "recycling:waste", "value" : 2 }
+{ "_id" : "ref:crs", "value" : 2 }
+{ "_id" : "ref:tiploc", "value" : 2 }
+{ "_id" : "ruin", "value" : 2 }
+{ "_id" : "ruins", "value" : 2 }
+{ "_id" : "school:head", "value" : 2 }
+{ "_id" : "scuba_diving:divespot", "value" : 2 }
+{ "_id" : "seamark:landmark:category", "value" : 2 }
+{ "_id" : "seamark:light:3:radius", "value" : 2 }
+{ "_id" : "seamark:light:4:group", "value" : 2 }
+{ "_id" : "seamark:light:4:radius", "value" : 2 }
+{ "_id" : "seamark:light:4:sequence", "value" : 2 }
+{ "_id" : "seamark:navigation_line:orientation", "value" : 2 }
+{ "_id" : "sex", "value" : 2 }
+{ "_id" : "shared", "value" : 2 }
+{ "_id" : "ship:type", "value" : 2 }
+{ "_id" : "short_name", "value" : 2 }
+{ "_id" : "source:designation", "value" : 2 }
+{ "_id" : "source:name:cy", "value" : 2 }
+{ "_id" : "source:position", "value" : 2 }
+{ "_id" : "sport_1", "value" : 2 }
+{ "_id" : "station", "value" : 2 }
+{ "_id" : "support", "value" : 2 }
+{ "_id" : "temporary:date_on", "value" : 2 }
+{ "_id" : "theme", "value" : 2 }
+{ "_id" : "tidal", "value" : 2 }
+{ "_id" : "tpuk_ref", "value" : 2 }
+{ "_id" : "traffic", "value" : 2 }
+{ "_id" : "traffic_signals:direction", "value" : 2 }
+{ "_id" : "turn:lanes", "value" : 2 }
+{ "_id" : "van", "value" : 2 }
+{ "_id" : "visibility", "value" : 2 }
+{ "_id" : "website2", "value" : 2 }
+{ "_id" : "wreck:visible_at_low_tide", "value" : 2 }
+{ "_id" : "zoo", "value" : 2 }
+{ "_id" : "Activity", "value" : 1 }
+{ "_id" : "Comment", "value" : 1 }
+{ "_id" : "FIXME:housename", "value" : 1 }
+{ "_id" : "FIXME:outline", "value" : 1 }
+{ "_id" : "OSMrender", "value" : 1 }
+{ "_id" : "PSV", "value" : 1 }
+{ "_id" : "Roadsign", "value" : 1 }
+{ "_id" : "abandoned:amenity", "value" : 1 }
+{ "_id" : "abandoned:building", "value" : 1 }
+{ "_id" : "abandoned:highway", "value" : 1 }
+{ "_id" : "access:backward", "value" : 1 }
+{ "_id" : "access:tide", "value" : 1 }
+{ "_id" : "aerialway", "value" : 1 }
+{ "_id" : "affiliation", "value" : 1 }
+{ "_id" : "agricultural", "value" : 1 }
+{ "_id" : "agriculture", "value" : 1 }
+{ "_id" : "ambulance", "value" : 1 }
+{ "_id" : "amenity_1", "value" : 1 }
+{ "_id" : "art", "value" : 1 }
+{ "_id" : "asset_ref", "value" : 1 }
+{ "_id" : "astronomy", "value" : 1 }
+{ "_id" : "attraction", "value" : 1 }
+{ "_id" : "bathing", "value" : 1 }
+{ "_id" : "betting", "value" : 1 }
+{ "_id" : "billiards", "value" : 1 }
+{ "_id" : "bollard", "value" : 1 }
+{ "_id" : "branch", "value" : 1 }
+{ "_id" : "branch:type", "value" : 1 }
+{ "_id" : "brand:wikipedia", "value" : 1 }
+{ "_id" : "bridge:historic", "value" : 1 }
+{ "_id" : "bridgemaster", "value" : 1 }
+{ "_id" : "building:material", "value" : 1 }
+{ "_id" : "byo", "value" : 1 }
+{ "_id" : "cabinet", "value" : 1 }
+{ "_id" : "cafe", "value" : 1 }
+{ "_id" : "camp_site", "value" : 1 }
+{ "_id" : "campus_name", "value" : 1 }
+{ "_id" : "camra", "value" : 1 }
+{ "_id" : "capacity:bus", "value" : 1 }
+{ "_id" : "capacity:motorcycle", "value" : 1 }
+{ "_id" : "capital", "value" : 1 }
+{ "_id" : "castle", "value" : 1 }
+{ "_id" : "centralkey", "value" : 1 }
+{ "_id" : "centre_line", "value" : 1 }
+{ "_id" : "chaplain", "value" : 1 }
+{ "_id" : "charity_number", "value" : 1 }
+{ "_id" : "chef", "value" : 1 }
+{ "_id" : "civilization", "value" : 1 }
+{ "_id" : "closed", "value" : 1 }
+{ "_id" : "closed_shop_premises", "value" : 1 }
+{ "_id" : "closest_town", "value" : 1 }
+{ "_id" : "coach", "value" : 1 }
+{ "_id" : "communication:television", "value" : 1 }
+{ "_id" : "community", "value" : 1 }
+{ "_id" : "construction:amenity", "value" : 1 }
+{ "_id" : "construction:shop", "value" : 1 }
+{ "_id" : "craft_cider", "value" : 1 }
+{ "_id" : "crossing:barrier", "value" : 1 }
+{ "_id" : "currency:XBT", "value" : 1 }
+{ "_id" : "currency:others", "value" : 1 }
+{ "_id" : "cycl", "value" : 1 }
+{ "_id" : "cycleway:motor_vehicle", "value" : 1 }
+{ "_id" : "cycleway:oneside:width", "value" : 1 }
+{ "_id" : "cycleway:otherside", "value" : 1 }
+{ "_id" : "cycleway:right:width", "value" : 1 }
+{ "_id" : "dance:teaching", "value" : 1 }
+{ "_id" : "date_end", "value" : 1 }
+{ "_id" : "day_off", "value" : 1 }
+{ "_id" : "day_on", "value" : 1 }
+{ "_id" : "developer", "value" : 1 }
+{ "_id" : "diesel", "value" : 1 }
+{ "_id" : "disabled_sp", "value" : 1 }
+{ "_id" : "disused:name", "value" : 1 }
+{ "_id" : "disused:tourism", "value" : 1 }
+{ "_id" : "drive_in", "value" : 1 }
+{ "_id" : "emergency_service", "value" : 1 }
+{ "_id" : "enforcement", "value" : 1 }
+{ "_id" : "ethnic", "value" : 1 }
+{ "_id" : "facebook:page", "value" : 1 }
+{ "_id" : "factory", "value" : 1 }
+{ "_id" : "fee:car", "value" : 1 }
+{ "_id" : "fence", "value" : 1 }
+{ "_id" : "fhrs:id:", "value" : 1 }
+{ "_id" : "films", "value" : 1 }
+{ "_id" : "fish", "value" : 1 }
+{ "_id" : "fixme2", "value" : 1 }
+{ "_id" : "fountain", "value" : 1 }
+{ "_id" : "fryup", "value" : 1 }
+{ "_id" : "fuel:lng", "value" : 1 }
+{ "_id" : "fuel:octane_91", "value" : 1 }
+{ "_id" : "geological", "value" : 1 }
+{ "_id" : "gnis:county_name", "value" : 1 }
+{ "_id" : "hairdresser", "value" : 1 }
+{ "_id" : "handrail", "value" : 1 }
+{ "_id" : "head", "value" : 1 }
+{ "_id" : "health_facility:type", "value" : 1 }
+{ "_id" : "health_specialty:acupuncture", "value" : 1 }
+{ "_id" : "health_specialty:traditional_chinese_medicine", "value" : 1 }
+{ "_id" : "heritage", "value" : 1 }
+{ "_id" : "heritage:operator", "value" : 1 }
+{ "_id" : "heritage:website", "value" : 1 }
+{ "_id" : "historic:civilisation", "value" : 1 }
+{ "_id" : "historic:culture", "value" : 1 }
+{ "_id" : "historic:man_made", "value" : 1 }
+{ "_id" : "hospital", "value" : 1 }
+{ "_id" : "imagery", "value" : 1 }
+{ "_id" : "industry", "value" : 1 }
+{ "_id" : "interpolation", "value" : 1 }
+{ "_id" : "irc", "value" : 1 }
+{ "_id" : "irish", "value" : 1 }
+{ "_id" : "is_in:district", "value" : 1 }
+{ "_id" : "is_in:municipality", "value" : 1 }
+{ "_id" : "island", "value" : 1 }
+{ "_id" : "landfill", "value" : 1 }
+{ "_id" : "landuse_1", "value" : 1 }
+{ "_id" : "lanes:bus:forward", "value" : 1 }
+{ "_id" : "lanes:destination", "value" : 1 }
+{ "_id" : "lanes:forward:bus", "value" : 1 }
+{ "_id" : "levels", "value" : 1 }
+{ "_id" : "link:myspace", "value" : 1 }
+{ "_id" : "listed", "value" : 1 }
+{ "_id" : "live_music", "value" : 1 }
+{ "_id" : "long_name", "value" : 1 }
+{ "_id" : "mail:meter", "value" : 1 }
+{ "_id" : "mail:stamped", "value" : 1 }
+{ "_id" : "maintenance", "value" : 1 }
+{ "_id" : "maritime", "value" : 1 }
+{ "_id" : "mast", "value" : 1 }
+{ "_id" : "maxdepth", "value" : 1 }
+{ "_id" : "maxheight:physical", "value" : 1 }
+{ "_id" : "maxspeed:backward", "value" : 1 }
+{ "_id" : "maxspeed:forward", "value" : 1 }
+{ "_id" : "meat", "value" : 1 }
+{ "_id" : "medical_system:chinese", "value" : 1 }
+{ "_id" : "membership", "value" : 1 }
+{ "_id" : "mineshaft_type", "value" : 1 }
+{ "_id" : "mock", "value" : 1 }
+{ "_id" : "monitoring:weather", "value" : 1 }
+{ "_id" : "mtb", "value" : 1 }
+{ "_id" : "mtb:description", "value" : 1 }
+{ "_id" : "mtb:scale:uphill", "value" : 1 }
+{ "_id" : "name:ar", "value" : 1 }
+{ "_id" : "name:de", "value" : 1 }
+{ "_id" : "name:el", "value" : 1 }
+{ "_id" : "name:etymology:wikidata", "value" : 1 }
+{ "_id" : "name:fa", "value" : 1 }
+{ "_id" : "name:gv", "value" : 1 }
+{ "_id" : "name:hi", "value" : 1 }
+{ "_id" : "name:is", "value" : 1 }
+{ "_id" : "name:kn", "value" : 1 }
+{ "_id" : "name:line", "value" : 1 }
+{ "_id" : "name:lv", "value" : 1 }
+{ "_id" : "name:old", "value" : 1 }
+{ "_id" : "name:roman", "value" : 1 }
+{ "_id" : "name:sv", "value" : 1 }
+{ "_id" : "named_after", "value" : 1 }
+{ "_id" : "naval", "value" : 1 }
+{ "_id" : "network:cy", "value" : 1 }
+{ "_id" : "not:name:en", "value" : 1 }
+{ "_id" : "note:access", "value" : 1 }
+{ "_id" : "note:alt_name", "value" : 1 }
+{ "_id" : "note:fhrs", "value" : 1 }
+{ "_id" : "note:housename", "value" : 1 }
+{ "_id" : "note:not:name", "value" : 1 }
+{ "_id" : "note:old_name", "value" : 1 }
+{ "_id" : "note:outline", "value" : 1 }
+{ "_id" : "note:survey", "value" : 1 }
+{ "_id" : "old_uk_postcode_centroid", "value" : 1 }
+{ "_id" : "old_website", "value" : 1 }
+{ "_id" : "operator:site_id", "value" : 1 }
+{ "_id" : "optician", "value" : 1 }
+{ "_id" : "other", "value" : 1 }
+{ "_id" : "parish", "value" : 1 }
+{ "_id" : "part_time", "value" : 1 }
+{ "_id" : "payment:cash", "value" : 1 }
+{ "_id" : "payment:litecoin", "value" : 1 }
+{ "_id" : "payment:electronic_purses", "value" : 1 }
+{ "_id" : "pentecostal", "value" : 1 }
+{ "_id" : "period_century", "value" : 1 }
+{ "_id" : "person", "value" : 1 }
+{ "_id" : "pet", "value" : 1 }
+{ "_id" : "philosophy", "value" : 1 }
+{ "_id" : "phone:events", "value" : 1 }
+{ "_id" : "phone:reservation", "value" : 1 }
+{ "_id" : "phone:tickets", "value" : 1 }
+{ "_id" : "phone:uk", "value" : 1 }
+{ "_id" : "physically_present", "value" : 1 }
+{ "_id" : "pitch", "value" : 1 }
+{ "_id" : "place_of_worship", "value" : 1 }
+{ "_id" : "plant:output:electricity", "value" : 1 }
+{ "_id" : "plaq", "value" : 1 }
+{ "_id" : "platform", "value" : 1 }
+{ "_id" : "pool", "value" : 1 }
+{ "_id" : "post", "value" : 1 }
+{ "_id" : "post_box:design", "value" : 1 }
+{ "_id" : "post_box:source:type", "value" : 1 }
+{ "_id" : "power_supply", "value" : 1 }
+{ "_id" : "previous_name", "value" : 1 }
+{ "_id" : "proposed:amenity", "value" : 1 }
+{ "_id" : "psv:backward", "value" : 1 }
+{ "_id" : "pvs", "value" : 1 }
+{ "_id" : "quarry", "value" : 1 }
+{ "_id" : "ramp:wheelchair", "value" : 1 }
+{ "_id" : "rcn", "value" : 1 }
+{ "_id" : "rcn_name", "value" : 1 }
+{ "_id" : "recycling:car_batteries", "value" : 1 }
+{ "_id" : "recycling:carpets", "value" : 1 }
+{ "_id" : "recycling:cooking_oil", "value" : 1 }
+{ "_id" : "recycling:electrical_items", "value" : 1 }
+{ "_id" : "recycling:engine_oil", "value" : 1 }
+{ "_id" : "recycling:fluorescent_tubes", "value" : 1 }
+{ "_id" : "recycling:garden_waste", "value" : 1 }
+{ "_id" : "recycling:hard_plastic", "value" : 1 }
+{ "_id" : "recycling:hardcore", "value" : 1 }
+{ "_id" : "recycling:low_energy_bulbs", "value" : 1 }
+{ "_id" : "recycling:mobile_phones", "value" : 1 }
+{ "_id" : "recycling:organic", "value" : 1 }
+{ "_id" : "recycling:plasterboard", "value" : 1 }
+{ "_id" : "recycling:printer_cartridges", "value" : 1 }
+{ "_id" : "recycling:rubble", "value" : 1 }
+{ "_id" : "recycling:shoes", "value" : 1 }
+{ "_id" : "recycling:tyres", "value" : 1 }
+{ "_id" : "recycling:waxed_cartons", "value" : 1 }
+{ "_id" : "recycling:white_goods", "value" : 1 }
+{ "_id" : "red", "value" : 1 }
+{ "_id" : "ref:LOCODE", "value" : 1 }
+{ "_id" : "ref:stanox", "value" : 1 }
+{ "_id" : "ref:whc", "value" : 1 }
+{ "_id" : "replica", "value" : 1 }
+{ "_id" : "resource", "value" : 1 }
+{ "_id" : "roadsign", "value" : 1 }
+{ "_id" : "rock_type", "value" : 1 }
+{ "_id" : "roof:material", "value" : 1 }
+{ "_id" : "roof:orientation", "value" : 1 }
+{ "_id" : "roof:shape", "value" : 1 }
+{ "_id" : "rooms", "value" : 1 }
+{ "_id" : "scout", "value" : 1 }
+{ "_id" : "seamark:beacon_lateral:category", "value" : 1 }
+{ "_id" : "seamark:beacon_lateral:colour", "value" : 1 }
+{ "_id" : "seamark:beacon_lateral:system", "value" : 1 }
+{ "_id" : "seamark:buoy_cardinal:category", "value" : 1 }
+{ "_id" : "seamark:buoy_cardinal:colour", "value" : 1 }
+{ "_id" : "seamark:buoy_cardinal:colour_pattern", "value" : 1 }
+{ "_id" : "seamark:buoy_cardinal:shape", "value" : 1 }
+{ "_id" : "seamark:buoy_safe_water:colour", "value" : 1 }
+{ "_id" : "seamark:buoy_safe_water:colour_pattern", "value" : 1 }
+{ "_id" : "seamark:buoy_safe_water:shape", "value" : 1 }
+{ "_id" : "seamark:harbour:category", "value" : 1 }
+{ "_id" : "seamark:light:2:category", "value" : 1 }
+{ "_id" : "seamark:light:2:orientation", "value" : 1 }
+{ "_id" : "seamark:light:3:category", "value" : 1 }
+{ "_id" : "seamark:light:3:orientation", "value" : 1 }
+{ "_id" : "seamark:light:4:category", "value" : 1 }
+{ "_id" : "seamark:light:4:orientation", "value" : 1 }
+{ "_id" : "seamark:radar_transponder:category", "value" : 1 }
+{ "_id" : "seamark:radar_transponder:group", "value" : 1 }
+{ "_id" : "seamark:radar_transponder:period", "value" : 1 }
+{ "_id" : "second_hand", "value" : 1 }
+{ "_id" : "service:bicycle:diy", "value" : 1 }
+{ "_id" : "service:bicycle:second_hand", "value" : 1 }
+{ "_id" : "service_times", "value" : 1 }
+{ "_id" : "sms", "value" : 1 }
+{ "_id" : "source:addr:housename", "value" : 1 }
+{ "_id" : "source:alt_name", "value" : 1 }
+{ "_id" : "source:area", "value" : 1 }
+{ "_id" : "source:capacity", "value" : 1 }
+{ "_id" : "source:date", "value" : 1 }
+{ "_id" : "source:extent", "value" : 1 }
+{ "_id" : "source:height", "value" : 1 }
+{ "_id" : "source:icao", "value" : 1 }
+{ "_id" : "source:listed_status", "value" : 1 }
+{ "_id" : "source:location", "value" : 1 }
+{ "_id" : "source:ncn", "value" : 1 }
+{ "_id" : "source:not:name", "value" : 1 }
+{ "_id" : "source:note", "value" : 1 }
+{ "_id" : "source:pkey", "value" : 1 }
+{ "_id" : "source:population", "value" : 1 }
+{ "_id" : "source:relation", "value" : 1 }
+{ "_id" : "source:tourism", "value" : 1 }
+{ "_id" : "source:tunnel", "value" : 1 }
+{ "_id" : "source_ref:capital", "value" : 1 }
+{ "_id" : "southglos:foodshop", "value" : 1 }
+{ "_id" : "sport:scuba", "value" : 1 }
+{ "_id" : "sport:scuba_diving", "value" : 1 }
+{ "_id" : "stand", "value" : 1 }
+{ "_id" : "surface.material", "value" : 1 }
+{ "_id" : "tandem", "value" : 1 }
+{ "_id" : "telephone_exchange:name", "value" : 1 }
+{ "_id" : "temporary:access", "value" : 1 }
+{ "_id" : "temporary:date_off", "value" : 1 }
+{ "_id" : "terrace", "value" : 1 }
+{ "_id" : "toilets:position", "value" : 1 }
+{ "_id" : "townhall:type", "value" : 1 }
+{ "_id" : "traff", "value" : 1 }
+{ "_id" : "traffic_calmed", "value" : 1 }
+{ "_id" : "traffic_sign", "value" : 1 }
+{ "_id" : "traffic_signals", "value" : 1 }
+{ "_id" : "training", "value" : 1 }
+{ "_id" : "travktype", "value" : 1 }
+{ "_id" : "tunnel:ref", "value" : 1 }
+{ "_id" : "uic_ref", "value" : 1 }
+{ "_id" : "undefined", "value" : 1 }
+{ "_id" : "user_defined", "value" : 1 }
+{ "_id" : "vegetable", "value" : 1 }
+{ "_id" : "wetap:photo", "value" : 1 }
+{ "_id" : "wetap:statusnote", "value" : 1 }
+{ "_id" : "whc:criteria", "value" : 1 }
+{ "_id" : "whc:inscription_date", "value" : 1 }
+{ "_id" : "wide_load", "value" : 1 }
+{ "_id" : "wiki", "value" : 1 }
+{ "_id" : "wikidata", "value" : 1 }
+{ "_id" : "wikiedpai", "value" : 1 }
+{ "_id" : "wreck:date_sunk", "value" : 1 }
+{ "_id" : "wreck:visible_at_high_tide", "value" : 1 }
+
+
+Q. where next?
+
+- Well I seem to recall there were literally a few records with 'keys containing dodgy chars' - look at those
+- Worth summarising at least the different street variants even if they are all ok,
+there were one or two that I didn't recognise at least
+- from the above keys - see fixme + some others look odd - wikiepai, travktype
+- we could do an inspection against al the 'approved' feature types
+- we could do a comparison agaisnt the uk osm tag database? osmtaginfo or something
+- we could look at postcodes to see if they make sense -  see regex at end
+- actually we can see post_codes that would have been better as addr:postcode
+- we could look for all the addr:nnn fields we say then look in the keys for any nnn (i.e. didn't have the addr prefix)
+- there are some fields like is_in which somehow denotes a kind of address, how should we deal?
+- how to deal with things like naptan, feels like the naptan prefix is more like source info?
+
+
+
+
+
+Postcode regex from - https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/359448/4__Bulk_Data_Transfer_-_additional_validation_valid.pdf
+
+^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$
