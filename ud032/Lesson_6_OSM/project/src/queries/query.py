@@ -13,8 +13,13 @@ def get_db(db_name):
     db = client[db_name]
     return db
 
-def runqry(db, coll, pipeline):
-    result = db[coll].aggregate(pipeline)
+def runqry(db, coll, qry, select_fields):
+    result = None    
+    
+    if select_fields:
+        result = db[coll].find(qry, select_fields)        
+    else:
+        result = db[coll].find(qry)
     return result
 
 if __name__ == '__main__':
@@ -26,9 +31,10 @@ if __name__ == '__main__':
     # require a -c option for collection
     parser = OptionParser()
     
-    parser.add_option("-f", "--file", help="input pipeline")
+    parser.add_option("-f", "--file", help="input query")
     parser.add_option("-d", "--db", help="mongo db")
     parser.add_option("-c", "--coll", help="mongo db coll")
+    parser.add_option("-s", "--sel", help="list of fields to select")
     
     
     (options,args) = parser.parse_args()
@@ -42,13 +48,20 @@ if __name__ == '__main__':
     if not options.file:
         parser.error("no input query file")
 
+    select_fields = []        
+    if options.sel:
+        select_fields = options.sel.split(",")       
+
     #  now get on with it at last
         
-    pipeline = get_from_file(options.file)
+    qry = get_from_file(options.file)
+    print qry
+#    sys.exit()
     
     db = get_db(options.db)
 
-    result = runqry(db, options.coll, pipeline)
+    result = runqry(db, options.coll, qry, select_fields)
 
-    import pprint
-    pprint.pprint(result)
+    import pprint    
+    for item in result:
+        pprint.pprint(item)

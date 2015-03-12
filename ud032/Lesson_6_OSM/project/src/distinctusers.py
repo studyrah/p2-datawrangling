@@ -3,15 +3,18 @@
 #import xml.etree.ElementTree as ET
 from lxml import etree as ET
 import pprint
-import re
-"""
-Your task is to explore the data a bit more.
-The first task is a fun one - find out how many unique users
-have contributed to the map in this particular area!
 
-The function process_map should return a set of unique user IDs ("uid")
+
+"""
+Simple script (based upon Lesson 6 Part 3) that iteratively parses an OSM XML
+file and reports a count of distinct users
 """
 
+"""
+Extracts the user attribute out of a tag, if it exists
+
+returns the user name or None
+"""
 def get_user(element):
     for tag in element.iter():
         if tag.attrib.has_key('user'):
@@ -19,6 +22,9 @@ def get_user(element):
     return None
 
 
+"""
+Processes the map and returens the list of contributing users
+"""
 def process_map(filename):
     users = set()
     
@@ -41,14 +47,9 @@ def process_map(filename):
     return users
 
 
-def test():
-
+"""
+  main()
+"""
+if __name__ == "__main__":
     users = process_map('../data/cardiff-newport-bristol-bath_england.osm')
     pprint.pprint(users)
-    print "num distinct users: " + str(len(users))
-    #assert len(users) == 6
-
-
-
-if __name__ == "__main__":
-    test()

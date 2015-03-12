@@ -1,0 +1,163 @@
+################################################################################
+#
+# Mongo Data Load and Queries
+#
+################################################################################
+
+
+#######################
+#
+# Name: Initialise MongoDb
+# 
+#######################
+
+mongo
+use osm
+db.createCollection('wwww')   # choice of wwww was completely random!!!!!!
+
+#######################
+#
+# Name: Ingest Data
+# 
+#######################
+
+cd ~/nanodegree/p2-datawrangling/ud032/Lesson_6_OSM/project/data
+mongoimport --db osm --collection wwww --file cardiff-newport-bristol-bath_england.osm.first.json
+
+# runs at about 6000 records per sec
+
+#######################
+#
+# Name: Querying Mongo
+# 
+#######################
+
+I setup two python files that would let me run (some) queries and aggregations
+more easily.
+
+cd ~/nanodegree/p2-datawrangling/ud032/Lesson_6_OSM/project/src/queries
+
+less query.py
+less aggregate.py
+
+#signature
+python query.py -f <qry file> -d <db> -c <coll> > <someoutfile>
+
+e.g.
+python query.py -f postal_code_invalid_qry.json -d osm -c wwww > ../../output/postal_code_invalid_qry_first.json
+
+#######################
+#
+# Name: User Summary Aggregation
+# 
+#######################
+
+cd ../src/queries
+python aggregate.py -f user_summary_agg.json -d osm -c wwww > ../../output/user_summary_agg_first.json
+
+wc -l ../../output/user_summary_agg_first.json
+
+1702
+
+All but one line contains a user so we have 1701 which is 10 short of the 1711 we saw when we performed a similar summary on the json. This equates nicely with the 10 records we observed with invalid mongo characters (but we are yet to confirm this).
+
+less ../../output/user_summary_agg_first.json
+
+{u'ok': 1.0,
+ u'result': [{u'_id': u'DaveF', u'count': 359026},
+             {u'_id': u'UniEagle', u'count': 167495},
+             {u'_id': u'JonBritton', u'count': 128386},
+             {u'_id': u'ndm', u'count': 122496},
+             {u'_id': u'southglos', u'count': 118994},
+             {u'_id': u'm-a-p', u'count': 114335},
+             {u'_id': u'oglord', u'count': 87762},
+             {u'_id': u'Jay456', u'count': 83814},
+             {u'_id': u'Nick Austin', u'count': 62275},
+             {u'_id': u'Paul The Archivist', u'count': 60030},
+             {u'_id': u'tiiiim', u'count': 56964},
+             {u'_id': u'RAW', u'count': 55263},
+             {u'_id': u'Broken Star', u'count': 51636},
+             {u'_id': u'FollowMeChaps', u'count': 49123},
+             {u'_id': u'SchematicMapper', u'count': 41689},
+             {u'_id': u'terrencem', u'count': 37800},
+             {u'_id': u'PawelJ', u'count': 37004},
+             {u'_id': u'manor09', u'count': 30660},
+             {u'_id': u'Huw Waters', u'count': 23435},
+             {u'_id': u'Dashers', u'count': 22458},
+             {u'_id': u'Steve Chilton', u'count': 21553},
+             ...
+             ...
+             ...
+             {u'_id': u'Laverock', u'count': 1},
+             {u'_id': u'Will Lau', u'count': 1},
+             {u'_id': u'Aleks-Berlin', u'count': 1},
+             {u'_id': u'wieland', u'count': 1},
+             {u'_id': u'Johnney', u'count': 1},
+             {u'_id': u'fumpel', u'count': 1},
+             {u'_id': u'shotaway', u'count': 1},
+             {u'_id': u'mapwales', u'count': 1}]}            
+
+Can't easily get this to 'bin' in order to produce a histogram!!!!!
+
+#######################
+#
+# Name: Element Types by User Summary Aggregation
+# 
+#######################
+
+cd ../src/queries
+python aggregate.py -f type_by_user_summary_agg.json -d osm -c wwww > type_by_user_summary_agg_first.json
+
+# Observations
+
+Pleasingly, only nodes and ways are reported (probably not much else to say
+
+
+#######################
+#
+# Name: Distinct Keys
+# 
+#######################
+
+Sometimes its amazingly hard to do simple things like 'find out what fields there are in your collection'
+( ref - http://geoff.com.au/content/get-list-all-fields-mongodb-collection)
+n.b. I ammended the m/r job to also output count
+
+Might use the output of this to test against the 'wiki fields'
+
+# mr job actually creates a collection wwww_keys
+mr = db.runCommand({   "mapreduce" : "wwww",   "map" : function() {     for (var key in this) { emit(key, 1); }   },   "reduce" : function(key, values) { return Array.sum(values); },   "out": "wwww" + "_keys" })
+
+#now just print the results
+db.wwww_keys.find().sort({"value" : -1}).pretty()
+
+#n.b. also wrapped the above up in a javascript file
+
+mongo osm distinct_keys_mr.js > ../../output/distinct_keys_first.json
+
+cat ../../output/distinct_keys_first.json
+
+{ "_id" : "_id", "value" : 2353149 }
+{ "_id" : "created", "value" : 2353149 }
+{ "_id" : "etype", "value" : 2353149 }
+{ "_id" : "id", "value" : 2353149 }
+{ "_id" : "pos", "value" : 2093098 }
+{ "_id" : "node_refs", "value" : 260051 }
+{ "_id" : "highway", "value" : 139817 }
+{ "_id" : "name", "value" : 87932 }
+{ "_id" : "building", "value" : 70693 }
+{ "_id" : "source", "value" : 70124 }
+{ "_id" : "barrier", "value" : 28165 }
+{ "_id" : "address", "value" : 27313 }
+{ "_id" : "created_by", "value" : 22798 }
+{ "_id" : "foot", "value" : 21925 }
+.....
+.....
+
+{ "_id" : "whc:inscription_date", "value" : 1 }
+{ "_id" : "wide_load", "value" : 1 }
+{ "_id" : "wiki", "value" : 1 }
+{ "_id" : "wikidata", "value" : 1 }
+{ "_id" : "wikiedpai", "value" : 1 }
+{ "_id" : "wreck:date_sunk", "value" : 1 }
+{ "_id" : "wreck:visible_at_high_tide", "value" : 1 }

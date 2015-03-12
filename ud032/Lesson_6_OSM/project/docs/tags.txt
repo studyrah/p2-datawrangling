@@ -1,0 +1,57 @@
+Tag Validation
+==============
+
+I thought it would be interesting to perform an audit of the observed tags against
+the OSM wiki features (i.e. essentially the of best practice keys/tags)
+
+http://wiki.openstreetmap.org/wiki/Map_Features
+
+After a little research I determined that the simplest way of obtaining an machine usable extract was
+to use the download available from Taginfo:
+
+http://taginfo.openstreetmap.org/download
+
+This was available in a Sqlite3 database form so I did the following in order to extract files containing
+the keys and tags for lookup:
+
+- installed Sqlite3
+
+sudo apt-get install sqlite3
+
+- downloaded the data
+
+wget http://taginfo.openstreetmap.org/download/taginfo-wiki.db.bz2
+bunzip2 taginfo-wiki.db.bz2
+
+- started the database
+
+sqlite3 taginfo-wiki.db
+
+- explored the schema
+
+.tables
+.schema wikipages_tags
+.schema wikipages_keys
+
+- looked at the data
+
+select * from wikipages_keys;
+select * from wikipages_tags;
+
+- dumped the data to csv
+
+sqlite> .output keys.csv
+sqlite> select * from wikipages_keys;
+sqlite> .output tags.csv
+sqlite> select * from wikipages_tags;
+
+*************************************
+
+can't see a way of doing a enrichment/filter
+by query (i.e. using tags/keys tables) in Mongo
+so just  do it in python
+
+Do it in a separate job or do it during load?????
+(separate I think)
+
+*************************************

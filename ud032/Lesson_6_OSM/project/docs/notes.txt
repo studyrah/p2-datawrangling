@@ -1146,3 +1146,133 @@ there were one or two that I didn't recognise at least
 Postcode regex from - https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/359448/4__Bulk_Data_Transfer_-_additional_validation_valid.pdf
 
 ^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$
+
+
+Some mongo console queries to validat postal_code:
+
+db.wwww.count({"postal_code" : {"$exists" : true}})
+7567
+db.wwww.count({"postal_code" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/})
+547
+db.wwww.count({"$and" : [{"postal_code" : {"$exists" : true}},{"postal_code" : {"$not" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/}}]})
+7020
+
+Inspection reveals that the vast majority appear to be partial postcodes
+
+e.g. 
+BS9
+NP19
+SN13 9
+
+Devise a regex to test validity to just this level
+7457
+
+leaves 110 dodgy?
+
+how do I get these?a
+
+this gets close (106)
+
+db.wwww.find({"$and" : [{"postal_code" : {"$exists" : true}},{"postal_code" : {"$not" : /^([Gg][Ii][Rr]( 0.*)?)|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))( [0-9].*)?)$/}}]}, {"postal_code" : 1, "_id" : 0})
+
+these are mostly cases without a space
+
+
+
+
+
+
+=============
+now consider address.postcode
+
+db.wwww.count({"address.postcode" : {"$exists" : true}})
+5947
+
+db.wwww.count({"address.postcode" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/})
+5844
+
+db.wwww.count({"$and" : [{"address.postcode" : {"$exists" : true}},{"address.postcode" : {"$not" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/}}]})
+103
+
+inspection again reveals mostly partial postcodes
+
+db.wwww.count({"$and" : [{"address.postcode" : {"$exists" : true}},{"address.postcode" : {"$not" : /^([Gg][Ii][Rr]( 0.*)?)|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))( [0-9].*)?)$/}}]}, {"address.postcode" : 1, "_id" : 0})
+
+26
+
+a mere 26 of the 103 are not a partial postcode, they are as follows:
+{ "address" : { "postcode" : "BS163YF" } }
+{ "address" : { "postcode" : "CF382HE" } }
+{ "address" : { "postcode" : "CF242PJ" } }
+{ "address" : { "postcode" : "Cf 31 1dq" } }
+{ "address" : { "postcode" : "CF244ND" } }
+{ "address" : { "postcode" : "BA149QG" } }
+{ "address" : { "postcode" : "CF313Ey" } }
+{ "address" : { "postcode" : "CF313Ey" } }
+{ "address" : { "postcode" : "BS352DG" } }
+{ "address" : { "postcode" : "BS347HZ" } }
+{ "address" : { "postcode" : "BS347HZ" } }
+{ "address" : { "postcode" : "BS352DG" } }
+{ "address" : { "postcode" : "BS352DG" } }
+{ "address" : { "postcode" : "BS34LS" } }
+{ "address" : { "postcode" : "BS34QW" } }
+{ "address" : { "postcode" : "BS1 " } }
+{ "address" : { "postcode" : "CF101LA" } }
+{ "address" : { "postcode" : "CF239YG" } }
+{ "address" : { "postcode" : "CF612UE" } }
+{ "address" : { "postcode" : "BS42eg" } }
+{ "address" : { "postcode" : "BS42EG" } }
+{ "address" : { "postcode" : "BA147BD" } }
+{ "address" : { "postcode" : "BA147BD" } }
+{ "address" : { "postcode" : "BS249AB" } }
+{ "address" : { "postcode" : "BA148PB" } }
+{ "address" : { "postcode" : "CF119EB" } }
+
+
+db.wwww.find({"address.postcode" : /[a-g]/},{"address.postcode" : true})
+{ "_id" : ObjectId("54f4e832a01d84684e498cee"), "address" : { "postcode" : "Cf 31 1dq" } }
+{ "_id" : ObjectId("54f4e83aa01d84684e4a3467"), "address" : { "postcode" : "bs10 7tn" } }
+{ "_id" : ObjectId("54f4e849a01d84684e4bb494"), "address" : { "postcode" : "cf10 1ad" } }
+{ "_id" : ObjectId("54f4e865a01d84684e4e63a0"), "address" : { "postcode" : "cf32 8db" } }
+{ "_id" : ObjectId("54f4e8e7a01d84684e5af04a"), "address" : { "postcode" : "bs1 2pz" } }
+{ "_id" : ObjectId("54f4e8e7a01d84684e5af04f"), "address" : { "postcode" : "bs1 2pz" } }
+{ "_id" : ObjectId("54f4e8e7a01d84684e5af948"), "address" : { "postcode" : "BS42eg" } }
+{ "_id" : ObjectId("54f4e8eca01d84684e5b5f9f"), "address" : { "postcode" : "bs1 3qd" } }
+{ "_id" : ObjectId("54f4e8eda01d84684e5b7c73"), "address" : { "postcode" : "BA2 3Df" } }
+{ "_id" : ObjectId("54f4e8f3a01d84684e5bfa47"), "address" : { "postcode" : "cf5 6hq" } }
+{ "_id" : ObjectId("54f4e8f5a01d84684e5c234b"), "address" : { "postcode" : "Bs16 9bj" } }
+
+db.wwww.count({"postal_code" : /[a-g]/})
+31
+
+
+=====================
+what about when we have a postal_code and an address.postcode?
+
+db.wwww.count({"$and" : [{"address.postcode" : {"$exists" : true}},{"postal_code" : {"$exists" : true}}]})
+24
+
+db.wwww.find({"$and" : [{"address.postcode" : {"$exists" : true}},{"postal_code" : {"$exists" : true}}]},{"postal_code" : true, "address.postcode" : true, "_id" : false}).pretty()
+{ "postal_code" : "BS8 4TX", "address" : { "postcode" : "BS8 4TX" } }
+{ "postal_code" : "BS16 5NP", "address" : { "postcode" : "BS16 5NP" } }
+{ "postal_code" : "BS15 1PR", "address" : { "postcode" : "BS15 1PR" } }
+{ "postal_code" : "BS7 8AT", "address" : { "postcode" : "BS7 8AT" } }
+{ "postal_code" : "BS16 6XA", "address" : { "postcode" : "BS16 6XA" } }
+{ "postal_code" : "BS4 5AL", "address" : { "postcode" : "BS4 5AL" } }
+{ "postal_code" : "NP19 4PT", "address" : { "postcode" : "NP19 4PT" } }
+{ "postal_code" : "GL12 7LS", "address" : { "postcode" : "GL12 7LS" } }
+{ "postal_code" : "BS8 3JH", "address" : { "postcode" : "BS8 3JH" } }
+{ "postal_code" : "GL12 8AD", "address" : { "postcode" : "GL12 8AD" } }
+{ "address" : { "postcode" : "BS8 2BJ" }, "postal_code" : "BS8 2BJ" }
+{ "postal_code" : "BS8 4AB", "address" : { "postcode" : "BS8 4AB" } }
+{ "postal_code" : "BS34 6NR", "address" : { "postcode" : "BS34 6NR" } }
+{ "postal_code" : "BS1 3RU", "address" : { "postcode" : "BS1 3RU" } }
+{ "postal_code" : "NP20", "address" : { "postcode" : "NP20 5NJ" } }
+{ "address" : { "postcode" : "BS8 1DR" }, "postal_code" : "BS8 1DR" }
+{ "postal_code" : "GL12 8AD", "address" : { "postcode" : "GL12 8AD" } }
+{ "postal_code" : "BS1 5BS", "address" : { "postcode" : "BS1 5BS" } }
+{ "postal_code" : "BS14 0DE", "address" : { "postcode" : "BS14 0DE" } }
+{ "postal_code" : "BS4 4AR", "address" : { "postcode" : "BS4 4AR" } }
+......
+
+exactly one doesn't match but it is a substring

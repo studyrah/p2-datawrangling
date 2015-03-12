@@ -5,49 +5,45 @@ from lxml import etree as ET
 import pprint
 import re
 """
-Your task is to explore the data a bit more.
-Before you process the data and add it into MongoDB, you should
-check the "k" value for each "<tag>" and see if they can be valid keys in MongoDB,
-as well as see if there are any other potential problems.
-
-We have provided you with 3 regular expressions to check for certain patterns
-in the tags. As we saw in the quiz earlier, we would like to change the data model
-and expand the "addr:street" type of keys to a dictionary like this:
-{"address": {"street": "Some value"}}
-So, we have to see if we have such tags, and if we have any tags with problematic characters.
-Please complete the function 'key_type'.
+Simple script (based upon Lesson 6 Part 2) that iteratively parses an OSM XML
+file and tests keys against a set of regular expressions with a view to 
+determining whether they can be loaded into MongoDb
 """
-
 
 lower = re.compile(r'^([a-z]|_)*$')
 lower_colon = re.compile(r'^([a-z]|_)*:([a-z]|_)*$')
 problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
 
 
+"""
+ It the element is a "tag", test the key ('k') against a number of regexes
+ to determine validity
+ 
+ returns dictionary containing a count of how many time each regex hit
+"""
 def key_type(element, keys):
+
     if element.tag == "tag":
-        # YOUR CODE HERE
-        for tag in element.iter("tag"):
-            if lower.search(tag.attrib['k']):
-                keys['lower'] = keys['lower'] + 1
-            elif lower_colon.search(tag.attrib['k']):
-                keys['lower_colon'] = keys['lower_colon'] + 1
-            elif problemchars.search(tag.attrib['k']):
-                keys['problemchars'] = keys['problemchars'] + 1
-            else:     
-                keys['other'] = keys['other'] + 1
+
+        #key = element.get('k')
+        key = element.attrib['k']
+
+        if lower.search(key):
+            keys['lower'] = keys['lower'] + 1
+        elif lower_colon.search(key):
+            keys['lower_colon'] = keys['lower_colon'] + 1
+        elif problemchars.search(key):
+            keys['problemchars'] = keys['problemchars'] + 1
+        else:     
+            keys['other'] = keys['other'] + 1
                 
     return keys
 
 
-
-def process_map3(filename):
-    keys = {"lower": 0, "lower_colon": 0, "problemchars": 0, "other": 0}
-    for _, element in ET.iterparse(filename):
-        keys = key_type(element, keys)
-
-    return keys
-
+"""
+ Iterates through each element and generates a dictionary of counts for each
+ flavour of tag key name format (as determined by matching regexes)
+"""
 def process_map(filename):
     keys = {"lower": 0, "lower_colon": 0, "problemchars": 0, "other": 0}
     
@@ -56,7 +52,8 @@ def process_map(filename):
     context = ET.iterparse(osm_file, events=("start", "end"))
 
     context = iter(context)
-    
+   
+    # step over root
     event,root = context.next()
     
    
@@ -66,21 +63,15 @@ def process_map(filename):
 
             keys = key_type(elem, keys)
 
+            #clear the element to stop building an in memory document
             elem.clear()
                             
     return keys    
     
+"""
+  main()
+"""
+if __name__ == "__main__":
 
-
-
-def test():
-    # You can use another testfile 'map.osm' to look at your solution
-    # Note that the assertions will be incorrect then.
-    #keys = process_map('../../part2/example.osm')
     keys = process_map('../data/cardiff-newport-bristol-bath_england.osm')
     pprint.pprint(keys)
-    #assert keys == {'lower': 5, 'lower_colon': 0, 'other': 1, 'problemchars': 1}
-
-
-if __name__ == "__main__":
-    test()

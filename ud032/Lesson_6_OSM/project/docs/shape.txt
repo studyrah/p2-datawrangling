@@ -1,0 +1,258 @@
+################################################################################
+#
+# Name: Basic Data Analysis On the output xml
+#
+################################################################################
+
+File size
+
+# size on disk
+436MB - ../data/cardiff-newport-bristol-bath_england.osm (uncompressed)
+
+# number of lines (though this is not ver useful given the data is xml)
+6,173,030
+
+#######################
+#
+# Name: Tag Count
+#
+# Description: Provides a count for each xml element tag
+# 
+#######################
+
+cd ../src
+python tagcount.py > ../output/tagcount.json
+
+cat ../output/tagcount.json
+
+{
+ 'bounds': 1,
+ 'member': 44811,
+ 'nd': 2585692,
+ 'node': 2093098,
+ 'osm': 1,
+ 'relation': 1766,
+ 'tag': 849051,
+ 'way': 260051
+}
+
+# observations:
+
+Nothing too surprising (no unexpected element tags):
+
+- osm is the top level wrapper
+- bounds defines a geo square that bounds the set (possibly should test everything is within
+- lots of ways with even more nodes as you'd expect (roughly 1:10)
+- not many relations ("define logical or geographic relationships between other elements")
+- tags are subelements of node, way and relation
+- nd is a node reference within a way so not surprising there are more of these than there are ways (roughly 10:1)
+
+For information, this takes approx 28.9 secs to execute (on my virtual machine)
+
+#######################
+#
+# Name: Key Character Validation
+#
+# Description: Validates the characters in each against given regular expressions
+# to see if they can be loaded into MongoDb
+# 
+#######################
+
+cd ../src
+python tagmongovalidity.py > ../output/tagmongovalidity.json
+
+cat ../output/tagmongovalidity.json
+
+{'lower': 716267, 'lower_colon': 89936, 'other': 42838, 'problemchars': 10}
+
+# observations
+
+So the vast majority are going to be fine, we have 10 problem records to assess and we should find out a little more about the 42,838 (we'll look at these later)
+
+#######################
+#
+# Name: Distinct Users
+#
+# Description: Produce a list of distinct contributors (users)
+# 
+#######################
+
+cd ../src
+python distinctusers.py > ../output/distinctusers.json
+
+wc -l ../output/distinctusers.json
+
+1711
+
+
+cat ../output/distinctusers.json
+
+set(['-AJ',
+     '-Anarchy-',
+     '0123456789',
+     '06038735',
+     '1bpostie',
+     '2DogsDoyle',
+     '31415927',
+     '42429',
+     '4c6565',
+     '5weet5',
+     '62ndSilverBeaver',
+     'A T R Birkett',
+     'AMB',
+     'APartlow',
+     'ARAnand',
+     'A_Snail',
+     'Abdoujaparov',
+     'Adam Hillmann',
+     'Adam1305',
+     'AdamJ',
+     'AdmiralSausage',
+     'Adrian Bowen',
+     'Adrian Hobson',
+     'Adrian Taylor',
+     ...
+     ...
+     'woozay',
+     'wottonmapman',
+     'wvdp',
+     'xscvxc',
+     'xteejx',
+     'xybot',
+     'xylome',
+     'yayu',
+     'ylex',
+     'ypid',
+     'zacmccormick',
+     'zenfunk',
+     'zeusfaber',
+     'zimirrr',
+     'zkw',
+     'zmarties',
+     'zool'])   
+     
+# observations
+
+So 1711 distinct users, later we will want to know how many contributions each made.       
+
+#######################
+#
+# Name: Street Audit
+#
+# Description: Perform an audit of street names
+# 
+#######################
+
+cd ../src
+python streetaudit.py > ../output/streetaudit_orig.json
+
+cat ../output/streetaudit_orig.json
+
+#observations
+
+We observe 230 variations on street above and beyond our initial expected set (Street, Avenue, Boulevard, Drive, Court, Place, Square, Lane, Road, Trail, Parkway, Commons)
+
+Through inspection we wish to put these into 3 categories:
+
+- expected - other variants that we consider accurate and best practice (e.g. Close)
+- mappable - variants we wish to map to an expected
+- other - anything else that we will need to look at in context (and either change manually or leave)
+
+Our expected list becomes [76]:
+
+            ['Street', 'Avenue', 'Boulevard', 'Drive', 'Court', 'Place', 'Square', 
+            'Lane', 'Road', 'Trail', 'Parkway', 'Commons', 
+            
+            'Ham', 'Cottages', 'Maltings', 'Causeway', 'Passage', 'Hill',             
+            'Gate', 'Mews', 'Bottoms', 'Path', 'Ponds', 'Wharf', 'Steps', 
+            'Chase', 'Glen', 'End', 'Arcade', 'West', 'Mills', 'Down', 'Quay', 
+            'Rise', 'Park', 'Paddock', 'Orchard', 'Grove', 'Green', 
+            'Corner', 'Grounds', 'Meadow', 'Circus', 'Woods', 'Row', 
+            'Crescent,', 'Way', 'Approach', 'Pavilions', 'Croft', 'North',
+            'Mead', 'Vale', 'South', 'Lawn', 'Ridgeway', 'Villas', 
+            'Parade', 'Cresent', 'Esplanade', 'Walk', 'Close', 'Ground', 
+            'Bush', 'Wood', 'Willows', 'Highway', 'East', 'Promenade', 
+            'Dale', 'Fields', 'Run', 'Gardens', 'View', 'Bridge', 
+            'Terrace']
+
+Our mapping becomes (revealing that there weren't many typos/abbreviations):
+
+            { 
+            "St": "Street",
+            "St.": "Street",
+            "Ave": "Avenue",
+            "Rd.": "Road",
+            "Rd": "Road",
+            "avenue": "Avenue",
+            "croft": "Croft",
+            "road": "Road",
+            "st": "Street",
+            "lane": "Lane",
+            "Cresent" : "Crescent"
+            }
+
+Others [157]:
+(All look clean, some look like towns or the name of the particular street, 
+several are Welsh - and probably valid, most others are also probably valid)
+
+          ['Awel', 'Kingsway', 'Kanetone', 'Berrycroft', 'Heol-Y-Deri', 
+          'Northcliffe', 'Coed-Y-Felin', 'Woodmarsh', 'Elm', 'Dene', 
+          'Westside', 'Haven', 'Building', 'Longcross', 'Yard', 'Bristol', 
+          'Gwaun', 'Quarter', 'Heol-Y-Gyfraith', 'Llantrithyd', 'Friars', 
+          'Millfield', 'caerphilly_road', 'Canol', 'Fromefield', 'Chedworth', 
+          'Horsefair', 'Broadway', 'Tolldown', 'Pentagon', 'Quadrant', 'Mare', 
+          'Ael-y-Bryn', 'Bryn', 'Bryntirion', 'Burltons', '3', 'Chatham', 
+          'Spur', 'Eglwys', 'A431)', 'Town', 'Beachley', 'Central', 
+          'Heol-y-Parc', 'Pierheadstreet', 'Counterslip', 'Tynings', 'Mall', 
+          'Isaf', 'Edwardsville', 'Coldra', 'Gateway', 'Fieldview', 'Neston', 
+          'Hendy', 'Hillcrest', 'Estate', 'Lakeside', 'Lewis', 'Afon', 
+          'Broadway,Chilcompton', 'Paragon', 'Bronhall', 'Oak', 'Southra', 
+          'Bibstone', 'Common', 'Embankment', 'Gillingstool', 'Glo', 'Sully', 
+          'Ffos-y-Fran', 'Fardre', 'Springfield', 'Cilffrydd', 'Plain', 
+          'Streamleaze', 'Weind', 'Abottside', 'Maes-Y-Coed', u'Glas', 'Rhiw', 
+          'Ysgol', 'Parklands', 'Falcondale', 'De-Winton', 'Hamfields', 
+          'Gorgeous', 'Johnson', 'Fach', 'Trelai', 'Back', 'Hector', 'Llyswen', 
+          'Terrell', 'Dolwen', 'Marics', 'Quadeast', 'Bury', 'Homefield', 
+          'Broadacres', 'Hillside', 'Badgeworth', 'Woodlands', 'Spinney', 
+          'Dockyard', 'Pound', 'Sawclose', 'Miles', 'Treharris', 'Bath', 
+          'Complex', 'Onen', 'Pennar', 'Pen-Y-Bryn', 'Goleu', 'Gooselands', 
+          'Oaks', 'Townsend', 'EArl', 'RCT,' , 'Sunningdale', 'Ashgrove', 
+          'Broadhaven' 'Tredomen', 'Buildings', 'Churchyard', 'Chipping', 
+          'Chalford', 'Fanheulog', 'Llan', 'Leigh', 'Elmgrove', 'Trecastell', 
+          'Queensway', 'Fedw', 'Houses', 'Pen-y-Dre', 'Bach', 'Tyning', 
+          'Barns', 'Centre', 'Heol', 'Twyn', 'Teigr', 'Trefeddyg', 'Townwell', 
+          'Hart', 'Teg', 'Lees', 'Coombe', 'Fairway', 'Bluebells', 'Birchgrove', 
+          'Riverside', 'Catwg', 'Pinwydden']
+
+# with update:
+
+python streetaudit.py -u > ../output/streetaudit_updated.json
+
+
+#######################
+#
+# Name: Json convert 1
+#
+# Description: Initial conversion of the input set to json for load into MongoDb
+# 
+#######################
+
+cd ../src
+python json_convert_first.py
+
+wc -l ../data/cardiff-newport-bristol-bath_england.osm.first.json
+
+2,353,149  (this corresponds to the number of records we will load into MongoDb
+
+# Observations
+
+This version is without street name conversion or (much) other cleaning
+
+Had to manipulate the timestamp to get that to load correctly:
+"....{"$date": "2011-01-05T18:40:43Z"}...."
+
+Change to output pretty = False cos it has orders of magnitude impact on ingest
+
+
+
+

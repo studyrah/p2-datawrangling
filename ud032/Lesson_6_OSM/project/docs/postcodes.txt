@@ -1,0 +1,276 @@
+Gather
+Assess our data:
+
+- Test Assumptions About
+  -values
+  -data types
+  -shape
+- Identify errors or outliers
+- Find missing values
+
+Data Cleaning (detecting and correcting):
+  - Measures of data quality
+    - validity (conformity to schema) 4
+    - accuracy (conforms to gold standard - do street addresses exist)  3
+    - completeness (do we have all records) 1
+    - consistency (matches other data)  2
+    - uniformity (e.g. use same units)  5
+
+===
+Audit (e.g. with validation rules, maybe statistical analysis)
+Data Cleaning Plan
+  - identify causes
+  - define operations (with tests)
+  - execute the plan (write/run scripts)
+  - manually correct
+
+
+
+[Post Code Audit]
+=====================
+
+
+Validation
+----------
+
+Conducting postcode validation according to the following regex which was obtained from the following uk gov website document (need to confirm this is authoritative):
+
+^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$
+
+https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/359448/4__Bulk_Data_Transfer_-_additional_validation_valid.pdf
+
+
+
+Exploration - fields
+---------------------
+
+From observation of all the tags (see map/reduce job in other file), the following were the primary keys for tags containing probable postcode data:
+
+postal_code - 6567
+addr:postcode - 5947 (which we converted to address.postcode for Mongo)
+source:postcode - 156
+uk_postcode_centroid - 79
+note:postal_code - 10
+note:postcode - 3
+postcode - 3
+old_uk_postcode_centroid - 1
+
+Clearly postal_code and addr:postcode are the most popular so we will consider those in more detail.
+
+For each of the 'less common variants' I decided to observe the data with mongo console queries similar to:
+
+db.wwww.find({"source:postcode" : {"$exists" : true}}).pretty()
+
+- source:postcode (156)
+
+  This query reveals that this field (unsurprisingly) refers to the source that provided the postcode
+
+  e.g. "source:postcode" : "OS_OpenData_CodePointOpen"
+
+  so this is not a postcode field variant but a discreet piece of information
+
+- uk_postcode_centroid, old_uk_postcode_centroid
+
+  an explanation of postcode centroids can be found here - http://codepoint.raggedred.net/
+  in particular though it says:
+
+  "...PLEASE do not add the centroids to the OSM map database. The centroids are not real objects so they do not belong in the OSM database."
+
+  as such should we just remove these entries?
+
+- note:postal_code, note:postcode
+
+  Again unsurprisingly these are freetext comments regarding an associated postal_code field in the record
+
+  So the one thing to consider is that if we standardise on a postcode field name we may wish to also change this field name accordingly
+
+- postcode
+
+  Simply an alternative postcode field, incidentally all three examples are valid (see regex query later)
+
+
+
+Exploration - postal_code and addr:postcode
+-------------------------------------------
+
+- How many are there?
+
+  db.wwww.count({"postal_code" : {"$exists" : true}})
+  db.wwww.count({"address.postcode" : {"$exists" : true}})
+
+  postal_code = 7567 (different from map reduce results?)
+  address.postcode = 5947
+
+
+- How many of them are valid uk postcodes?
+
+  db.wwww.count({"postal_code" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/})
+
+  db.wwww.count({"address.postcode" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/})
+
+  postal_code = 547 (7.2% very low)
+  address.postcode = 5848 (98.3% very high)
+
+
+- For completeness (and to double check) how many of them are invalid uk postcodes?
+
+  db.wwww.count({"$and" : [{"postal_code" : {"$exists" : true}},{"postal_code" : {"$not" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/}}]})
+
+  db.wwww.count({"$and" : [{"address.postcode" : {"$exists" : true}},{"address.postcode" : {"$not" : /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) [0-9][A-Za-z]{2})$/}}]})
+
+  postal_code = 7020 (as expected)
+  address.postcode = 103 (as expected)
+
+
+- What accounts for these invalid postcodes?
+
+  Sample inspection reveals that in many cases what we have are partial postcodes, presumably to denote the general area
+
+  Explicitly, uk postcodes are typically in 2 halfs, the partial postcodes we see are either just the first half or
+  the first half plus the first digit of the second half
+ 
+  e.g.
+  BS7
+  CF72 9
+
+  so if we assume this is a reasonable thing to do (??), it begs the question how many of these are 'valid partial postcodes'?
+
+
+- How many are valid partial postcodes are there?
+
+  db.wwww.count({"$and" : [{"postal_code" : {"$exists" : true}},{"postal_code" : /^([Gg][Ii][Rr]( 0)?)|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))( [0-9])?)$/}]}, {"postal_code" : 1, "_id" : 0})
+6910
+
+  db.wwww.count({"$and" : [{"address.postcode" : {"$exists" : true}},{"address.postcode" : /^([Gg][Ii][Rr]( 0)?)|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))( [0-9])?)$/}]}, {"address.postcode" : 1, "_id" : 0})
+66
+
+  postal_code = 6910 (98.4% of the remainder)
+  address.postcode = 66 (64% of the remainder)
+
+  So in either case we can see that the postcode is mostly either a valid full or partial postcode BUT whilst the addr:postcode field is mostly full
+  postcodes, postal_code is mostly partial postcodes
+
+
+- How many postcodes are neither valid 'full or partial postcodes'?
+
+  db.wwww.count({"$and" : [{"postal_code" : {"$exists" : true}},{"postal_code" : {"$not" : /^([Gg][Ii][Rr]( 0.*)?)|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))( [0-9].*)?)$/}}]}, {"postal_code" : 1, "_id" : 0})
+
+  db.wwww.count({"$and" : [{"address.postcode" : {"$exists" : true}},{"address.postcode" : {"$not" : /^([Gg][Ii][Rr]( 0.*)?)|((([A-Za-z][0-]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([AZa-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z]))))( [0-9].*)?)$/}}]}, {"address.postcode" : 1, "_id" : 0})
+
+
+  postal_code = 106
+  address.postcode = 26
+
+  sadly the maths doesn't quite workout and I'm left (in total) with 11 postcodes unaccounted for
+
+
+- What is in these remaining postcodes (106 + 26)?
+
+  There are few enough now to inspect, here are some examples
+
+	{ "address" : { "postcode" : "CF382HE" } }
+	{ "address" : { "postcode" : "CF242PJ" } }
+	{ "address" : { "postcode" : "Cf 31 1dq" } }
+	{ "address" : { "postcode" : "BS347HZ" } }
+	{ "address" : { "postcode" : "BS1 " } }
+	{ "address" : { "postcode" : "BS42eg" } }
+	......
+	{ "postal_code" : "NP" }
+	{ "postal_code" : "1" }
+	{ "postal_code" : "CF356JQ" }
+	{ "postal_code" : "CF315FD" }
+	{ "postal_code" : "CF315FD" }
+
+  The vast majority 'look like' they are valid except for a missing space
+
+
+- How many records contain both addr:postcode and postal_code?
+
+  On the assumption that we want to 'standardise' postcode field names (to addr:postcode), we will have to deal
+  with situations when the record contains both addr:postcode and postal_code, so lets see how common it is and
+  'what it looks like'.
+
+  db.wwww.count({"$and" : [{"address.postcode" : {"$exists" : true}},{"postal_code" : {"$exists" : true}}]})
+
+  ans = 24
+
+  db.wwww.find({"$and" : [{"address.postcode" : {"$exists" : true}},{"postal_code" : {"$exists" : true}}]},{"postal_code" : true, "address.postcode" : true, "_id" : false}).pretty()
+
+	{ "postal_code" : "BS8 4TX", "address" : { "postcode" : "BS8 4TX" } }
+	{ "postal_code" : "BS16 5NP", "address" : { "postcode" : "BS16 5NP" } }
+	{ "postal_code" : "BS15 1PR", "address" : { "postcode" : "BS15 1PR" } }
+	{ "postal_code" : "BS7 8AT", "address" : { "postcode" : "BS7 8AT" } }
+	{ "postal_code" : "NP20", "address" : { "postcode" : "NP20 5NJ" } }
+	{ "address" : { "postcode" : "BS8 1DR" }, "postal_code" : "BS8 1DR" }
+	......
+
+  So it doesn't happen very often, when it does they match in all but one cae and that is because one side is a partial (so kind of does match)
+
+
+- Are the observed postcodes valid for the geographic area under consideration?
+
+  Crudely we can use the first two letters as a guide
+
+  addr:postcode:
+
+  {u'ok': 1.0,
+   u'result': [{u'_id': u'', u'count': 2347202},
+             {u'_id': u'CF', u'count': 2641},
+             {u'_id': u'BS', u'count': 2342},
+             {u'_id': u'NP', u'count': 368},
+             {u'_id': u'GL', u'count': 300},
+             {u'_id': u'BA', u'count': 252},
+             {u'_id': u'SN', u'count': 26},
+             {u'_id': u'TA', u'count': 5},
+             {u'_id': u'NG', u'count': 4},
+             {u'_id': u'bs', u'count': 4},
+             {u'_id': u'cf', u'count': 3},
+             {u'_id': u'Cf', u'count': 1},
+             {u'_id': u'Bs', u'count': 1}]}
+
+  postal_code:
+
+  {u'ok': 1.0,
+   u'result': [{u'_id': u'', u'count': 2345582},
+             {u'_id': u'BS', u'count': 3495},
+             {u'_id': u'NP', u'count': 3470},
+             {u'_id': u'CF', u'count': 318},
+             {u'_id': u'GL', u'count': 199},
+             {u'_id': u'BA', u'count': 36},
+             {u'_id': u'cf', u'count': 30},
+             {u'_id': u'SN', u'count': 13},
+             {u'_id': u'TA', u'count': 3},
+             {u'_id': u'ba', u'count': 1},
+             {u'_id': u'1', u'count': 1},
+             {u'_id': u'Bs', u'count': 1}]}
+
+  Look appropriate: 
+
+  BS - Bristol
+  NP - Newport
+  CF - Cardiff
+  GL - Gloucester
+  BA - Bath
+  SN - .. various 'parts of' counties within the right area (e.g. Wiltshire, Gloucestershire, Oxfordshire)
+  TA - .. parts of West Somerset
+
+  Look inappropriate:
+  
+  NG - Nottingham
+  1 - ???? 
+
+  The Nottingham records all look like a they should be Newport addresses (typo NG instead of NP)
+ 
+
+- How many contain lower case letters?
+
+  Although it is valid for postcodes to contain both upper and lower case letters, for the sake of consistency it
+  would be good to do 'one or the other'
+
+  db.wwww.count({"postal_code" : /[a-z]/})
+  db.wwww.count({"address:postcode" : /[a-z]/})
+
+  postal_code = 32
+  address.postcode = 0 
+
+  so pretty rare
