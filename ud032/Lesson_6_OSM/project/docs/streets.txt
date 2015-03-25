@@ -90,32 +90,3 @@ several are Welsh - and probably valid, most others are also probably valid)
 # with update:
 
 python streetaudit.py -u > ../output/streetaudit_updated.json
-
-
-#######################
-#
-# Name: Json convert 1
-#
-# Description: Initial conversion of the input set to json for load into MongoDb
-# 
-#######################
-
-cd ../src
-python json_convert_first.py
-
-wc -l ../data/cardiff-newport-bristol-bath_england.osm.first.json
-
-2,353,149  (this corresponds to the number of records we will load into MongoDb
-
-# Observations
-
-This version is without street name conversion or (much) other cleaning
-
-Had to manipulate the timestamp to get that to load correctly:
-"....{"$date": "2011-01-05T18:40:43Z"}...."
-
-Change to output pretty = False cos it has orders of magnitude impact on ingest
-
-
-
-

@@ -1,0 +1,19 @@
+[Dataset Selection]
+===================
+
+cardiff-newport-bristol-bath_england.osm
+
+Chose as it was the closest pre-prepared data set to home. The file name is fairly self explanatory, it covers an area that includes the cities ofCardiff, Newport, Bristol, Bath and everywhere inbetween.
+
+Retrieved From:
+
+Mapzen.com/metro-extracts
+
+https://s3.amazonaws.com/metro-extracts.mapzen.com/cardiff-newport-bristol-bath_england.osm.bz2
+
+Extract:
+
+bzip2 -d cardiff-newport-bristol-bath_england.osm.bz2
+
+Filesize: 436MB
+Rows (not that it's a csv so it doesn't really count): 6,173,030

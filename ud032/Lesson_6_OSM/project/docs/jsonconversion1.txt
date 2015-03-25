@@ -21,7 +21,3 @@ Had to manipulate the timestamp to get that to load correctly:
 "....{"$date": "2011-01-05T18:40:43Z"}...."
 
 Change to output pretty = False cos it has orders of magnitude impact on ingest
-
-
-
-
