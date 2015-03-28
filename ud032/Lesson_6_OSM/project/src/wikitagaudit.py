@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
-"""
-
-"""
 import csv
 import os
 import pprint
@@ -13,26 +10,52 @@ from lxml import etree as ET
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+
+"""
+Performs an audit of dataset tags against the best practice tag keys and 
+values listed on the osmwiki
+
+Essentially we look for exact matches on keys/values and where this fails
+we look for substring matches on key/values and calculate the closest
+key/value matches based upon edit distance
+"""
+
+
 OSMFILE = "../data/cardiff-newport-bristol-bath_england.osm"
+
+# our reference data file
 KEYFILE = "../data/keys.csv"
 TAGFILE = "../data/tags.csv"
 
+# generated lookup of keys and values
 tag_lookup = {}
 
-numtags = 0
+#
+#variety of counters to calculate and report
+#
+
+#simply number of tags in the dataset
+numtags = 0 
+#number of times we do and don't match an osm wiki key
 kmatch = 0
 knomatch = 0
+#number of times we do and don't get a substring match to an osm wiki key
 ksubmatch = {}
 kbestmatch = {}
-
+# vpopulated corresponds to the case whereby the matching osm wiki key
+# has associated best practice values to match against
 vpopulated = 0
 vnopopulated = 0
+# value matches an osm wiki value for the matching key
 vmatch = 0
 vnomatch = 0
+# value substring matches an osm wiki value for the matchin key
 vsubmatch = {}
 vbestmatch = {}
 
-
+"""
+process csv file to produce lookup
+"""
 def parse_csv_file(datafile, add_lookup_entry, lookup):
     with open(datafile, 'rb') as f:
         rows = csv.reader(f, delimiter='|', quotechar='\"')
@@ -41,14 +64,21 @@ def parse_csv_file(datafile, add_lookup_entry, lookup):
             add_lookup_entry(lookup, row)            
 
 
-            
+"""
+Add the key (at position 0 of the given row) to the lookup
+
+One of the lookups contains just the keys, there are no associated values
+so we just create an empty set
+"""            
 def add_key_to_lookup(lookup, row):
     ukey = unicode(row[0])    
     
     if not lookup.has_key(ukey):
         lookup[ukey] = set()
 
-        
+"""
+Add the key/value pair (position 0,1 respectively in row) to the lookup
+"""        
 def add_tag_to_lookup(lookup, row):
     ukey = unicode(row[0])    
     uval = unicode(row[1])
@@ -57,7 +87,13 @@ def add_tag_to_lookup(lookup, row):
     vals.add(uval)
     lookup[ukey] = vals
 
+"""
+Calculates the edit distance of the given string (value) from each
+string in the lookup (essentially an iterable of strings), returning a set of
+the closest matching.
 
+Distance is calculated using the Levenshtein edit distance algorithm
+"""
 def best_matches(key_lookup, value):
     uvalue = value
     lowest_keys = set()
@@ -76,6 +112,10 @@ def best_matches(key_lookup, value):
     
     return (lowest_keys,lowest_score)
 
+"""
+Performs a sub string match of the given string (value) agaisnt each string
+in the given lookup (key_lookup), returning a set of all the matches
+"""
 def substring_matches(key_lookup, value):
     uvalue = unicode(value)
     
@@ -86,6 +126,9 @@ def substring_matches(key_lookup, value):
             
     return keys
 
+"""
+Audit the given key/value against the lookup
+"""
 def audittag(tag_lookup,test_key,test_val):
     global numtags
     global kmatch

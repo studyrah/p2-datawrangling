@@ -53,7 +53,7 @@ This directory contains the primary python files used to audit and cleanse the d
 
 * wikitagaudit.py       - performs an audit of observed tag keys and values against best practice forms defined on the osm wiki
 * json_convert_first.py - conversion (to mongo form) code for the initial pass
-* json_convery_final.py - conversion (to mongo form) code for the final pass
+* json_convert_final.py - conversion (to mongo form) code for the final pass
 
 [queries]
 ---------

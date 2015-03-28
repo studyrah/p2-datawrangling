@@ -92,34 +92,12 @@ problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
 
 CREATED = [ "version", "changeset", "timestamp", "user", "uid"]
 
-cnt = 0
-
 
 def shape_element(element):
     node = {}
-
-    global cnt
-    
-    cnt += 1
-    
-    if cnt > 100:
-        exit
         
-  
-
-
     #- you should process only 2 types of top level tags: "node" and "way"    
     if element.tag == "node" or element.tag == "way" :
-
-        for k,v in element.attrib.iteritems():
-            print("parent: " + k + " : " + v)
-
-        for child in element:
-            
-            for g,h in child.attrib.iteritems():
-                print("child: " + g + " : " +h)
-
-
         # YOUR CODE HERE
         node['type'] = element.tag
         

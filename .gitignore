@@ -40,4 +40,9 @@ nosetests.xml
 
 # rahaugh
 *.*~
-ud032/Lesson_6_OSM/project/data
+ud032/Lesson_6_OSM/project/data/cardiff*
+ud032/Lesson_6_OSM/project/data/taginfo-wiki.db
+ud032/Lesson_6_OSM/project/data/tags.csv
+ud032/Lesson_6_OSM/project/data/keys.csv
+ud032/Lesson_6_OSM/project/data/wa.json
+

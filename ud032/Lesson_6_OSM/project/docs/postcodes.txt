@@ -1,34 +1,5 @@
-Gather
-Assess our data:
-
-- Test Assumptions About
-  -values
-  -data types
-  -shape
-- Identify errors or outliers
-- Find missing values
-
-Data Cleaning (detecting and correcting):
-  - Measures of data quality
-    - validity (conformity to schema) 4
-    - accuracy (conforms to gold standard - do street addresses exist)  3
-    - completeness (do we have all records) 1
-    - consistency (matches other data)  2
-    - uniformity (e.g. use same units)  5
-
-===
-Audit (e.g. with validation rules, maybe statistical analysis)
-Data Cleaning Plan
-  - identify causes
-  - define operations (with tests)
-  - execute the plan (write/run scripts)
-  - manually correct
-
-
-
 [Post Code Audit]
 =====================
-
 
 Validation
 ----------

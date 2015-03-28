@@ -10,84 +10,13 @@ import sys
 from streetaudit import update_name
 from streetaudit import mapping
 from streetaudit import is_street_name
+import postcode_utils
+
 """
-Your task is to wrangle the data and transform the shape of the data
-into the model we mentioned earlier. The output should be a list of dictionaries
-that look like this:
+cleanse the data and produce output json fit for Mongo.
 
-{
-"id": "2406124091",
-"type: "node",
-"visible":"true",
-"created": {
-          "version":"2",
-          "changeset":"17206049",
-          "timestamp":"2013-08-03T16:43:42Z",
-          "user":"linuxUser16",
-          "uid":"1219059"
-        },
-"pos": [41.9757030, -87.6921867],
-"address": {
-          "housenumber": "5157",
-          "postcode": "60625",
-          "street": "North Lincoln Ave"
-        },
-"amenity": "restaurant",
-"cuisine": "mexican",
-"name": "La Cabana De Don Luis",
-"phone": "1 (773)-271-5176"
-}
-
-You have to complete the function 'shape_element'.
-We have provided a function that will parse the map file, and call the function with the element
-as an argument. You should return a dictionary, containing the shaped data for that element.
-We have also provided a way to save the data in a file, so that you could use
-mongoimport later on to import the shaped data into MongoDB. 
-
-Note that in this exercise we do not use the 'update street name' procedures
-you worked on in the previous exercise. If you are using this code in your final
-project, you are strongly encouraged to use the code from previous exercise to 
-update the street names before you save them to JSON. 
-
-In particular the following things should be done:
-- you should process only 2 types of top level tags: "node" and "way"
-- all attributes of "node" and "way" should be turned into regular key/value pairs, except:
-    - attributes in the CREATED array should be added under a key "created"
-    - attributes for latitude and longitude should be added to a "pos" array,
-      for use in geospacial indexing. Make sure the values inside "pos" array are floats
-      and not strings. 
-- if second level tag "k" value contains problematic characters, it should be ignored
-- if second level tag "k" value starts with "addr:", it should be added to a dictionary "address"
-- if second level tag "k" value does not start with "addr:", but contains ":", you can process it
-  same as any other tag.
-- if there is a second ":" that separates the type/direction of a street,
-  the tag should be ignored, for example:
-
-<tag k="addr:housenumber" v="5158"/>
-<tag k="addr:street" v="North Lincoln Avenue"/>
-<tag k="addr:street:name" v="Lincoln"/>
-<tag k="addr:street:prefix" v="North"/>
-<tag k="addr:street:type" v="Avenue"/>
-<tag k="amenity" v="pharmacy"/>
-
-  should be turned into:
-
-{...
-"address": {
-    "housenumber": 5158,
-    "street": "North Lincoln Avenue"
-}
-"amenity": "pharmacy",
-...
-}
-
-- for "way" specifically:
-
-  <nd ref="305896090"/>
-  <nd ref="1719825889"/>
-
-should be turned into
-"node_refs": ["305896090", "1719825889"]
+In particular this will adhere to the format and rules set out in lesson 6
+but will additionally cleanse street names and postcodes
 """
 cntr = 0
 
@@ -97,6 +26,9 @@ problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
 
 CREATED = [ "version", "changeset", "timestamp", "user", "uid"]
 
+"""
+converts the given element into appropriate json ready data
+"""
 def shape_element(element):
     node = {}
     global cntr
@@ -155,13 +87,12 @@ def shape_element(element):
                 k = child.attrib['k']
                 v = child.attrib['v']                
 
-                # we have some postcode variants we want to make consistent
-                if k == "postal_code" or k == "postcode":
-                    k = "addr:postalcode"
-                if k == "source:postcode":
-                    k = "source:addr:postcode"
-                if k == "note:postcode":
-                    k = "note:addr:postcode"
+                # we want to 'do some cleansing' if its a postcode
+                # or metadata about postcodes
+                if postcode_utils.is_postcode_key(k):
+                    k,v = postcode_utils.cleanse_postcode(k,v)
+                elif postcode_utils.is_postcode_meta_key(k):
+                    k = postcode_utils.cleanse_meta_key(k)
                 
                 #- if second level tag "k" value starts with "addr:", it should be added to a dictionary "address"                
                 if k.startswith('addr'):
@@ -170,8 +101,6 @@ def shape_element(element):
                     # if its a street name then map it
                     if k == "addr:street":
                         address["street"] = update_name(v, mapping)
-                    elif is_postcode(k):
-                        address["postcode"] = v
                     #- if second level tag "k" value contains problematic characters, it should be ignored
                     elif problemchars.search(k) == None:
                         if len(splits) == 2:
@@ -216,20 +145,20 @@ def is_postcode(k):
     return k == "addr:postcode"
 
 
+"""
+Iterate the given file, converting to cleansed json
+"""
 def process_map(file_in, pretty = False):
     
-    file_out = "{0}.first.json".format(file_in)
+    file_out = "{0}.final.json".format(file_in)
     
-    #data = []
-
     with codecs.open(file_out, "w") as fo:
  
         context = ET.iterparse(file_in, events=("start", "end"))
 
         context = iter(context)
     
-        event,root = context.next()
-    
+        event,root = context.next()    
    
         for event,elem in context:
 
@@ -245,21 +174,10 @@ def process_map(file_in, pretty = False):
 
                     elem.clear()
                             
-        """
-        for _, element in ET.iterparse(file_in):
-            el = shape_element(element)
-            if el:
-                data.append(el)
-                if pretty:
-                    fo.write(json.dumps(el, indent=2)+"\n")
-                else:
-                    fo.write(json.dumps(el) + "\n")
-        """
-    #return data
-
     
     
 if __name__ == "__main__":
     #data = process_map('../data/cardiff-newport-bristol-bath_england.osm', True)
     #data = process_map('../../part5/example.osm', True)
     process_map('../data/cardiff-newport-bristol-bath_england.osm', False)
+

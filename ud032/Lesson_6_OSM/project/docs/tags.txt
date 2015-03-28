@@ -1,5 +1,7 @@
 ###############################################################################
+#
 # Tag Consistency Audit
+#
 ###############################################################################
 
 I thought it would be interesting to perform an audit of the observed tags against
