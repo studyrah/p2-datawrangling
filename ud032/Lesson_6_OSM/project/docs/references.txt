@@ -1,0 +1,20 @@
+###########################################################
+#
+# References
+#
+###########################################################
+
+# XML parsing of large documents
+http://effbot.org/zone/element-iterparse.htm
+http://www.ibm.com/developerworks/library/x-hiperfparse/
+http://lxml.de/
+
+# Levenshtein edit distance
+http://en.wikipedia.org/wiki/Levenshtein_distance
+https://pypi.python.org/pypi/python-Levenshtein/
+
+# Tag Reference Data
+http://taginfo.openstreetmap.org.uk/
+
+# Postcode format data
+https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/359448/4__Bulk_Data_Transfer_-_additional_validation_valid.pdf
